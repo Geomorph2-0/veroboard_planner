@@ -1,0 +1,154 @@
+.wrap {
+  overflow: auto;
+  border-radius: 6px;
+  background: #1a1209;
+  padding: 10px;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.svg {
+  display: block;
+}
+
+/* Board surface — warm orange-brown phenolic, matching real veroboard */
+.boardSurface {
+  fill: #b8621a;
+}
+
+/* Subtle darker border around board edge */
+.boardEdge {
+  fill: none;
+  stroke: #8a4410;
+  stroke-width: 1.5;
+}
+
+/* Copper strips on underside — visible as warm golden overlay */
+.copperStrip {
+  stroke: #c8882a;
+  opacity: 0.5;
+}
+
+/* Annular copper pad ring around each hole */
+.pad {
+  fill: none;
+  stroke: #c8882a;
+  stroke-width: 1.8;
+  cursor: pointer;
+  transition: stroke 0.1s;
+}
+
+.pad:hover {
+  stroke: #f0b840;
+  stroke-width: 2.2;
+}
+
+/* Perfboard — filled copper dot pad (isolated) */
+.padPerfboard {
+  fill: #c8882a;
+  stroke: #8a5810;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 0.1s;
+}
+
+.padPerfboard:hover {
+  fill: #e0a840;
+}
+
+.padPending {
+  fill: rgba(255, 200, 50, 0.25);
+  stroke: #ffd166;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px #ffaa00);
+}
+
+/* Drilled hole — dark, prominent */
+.hole {
+  fill: #1c0e04;
+  pointer-events: none;
+}
+
+.holeGroup {
+  cursor: pointer;
+}
+
+/* Axis labels */
+.axisLabel {
+  fill: #7a4a18;
+  font-size: 8px;
+  font-family: "JetBrains Mono", "Fira Mono", monospace;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Wires */
+.wire {
+  cursor: pointer;
+}
+
+.wireSelected {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.wireHit {
+  cursor: pointer;
+  stroke-linecap: round;
+}
+
+/* Components */
+.componentLead {
+  stroke: #a0a0a0;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.resistorBody {
+  fill: #e8d8a0;
+  stroke: #9a8040;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+
+.resistorBody.selected {
+  filter: drop-shadow(0 0 5px #fbbf24);
+  stroke: #fbbf24;
+  stroke-width: 1.5;
+}
+
+.capacitorBody {
+  fill: #1a3a7a;
+  stroke: #122a5a;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.capacitorBody.selected {
+  filter: drop-shadow(0 0 5px #60a5fa);
+  stroke: #60a5fa;
+  stroke-width: 1.5;
+}
+
+.capacitorStripe {
+  stroke: #e5e7eb;
+  stroke-width: 2;
+  opacity: 0.5;
+}
+
+.colorBand {
+  stroke-width: 2.5;
+  opacity: 0.9;
+}
+
+.componentHit {
+  cursor: pointer;
+}
+
+.componentLabel {
+  fill: #fff8dc;
+  font-size: 8px;
+  font-family: "JetBrains Mono", "Fira Mono", monospace;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}

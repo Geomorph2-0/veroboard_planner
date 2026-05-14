@@ -1,0 +1,74 @@
+.panel {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.header {
+  padding: 18px 14px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.statusBar {
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-input);
+  min-height: 36px;
+  line-height: 1.4;
+}
+
+.group {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.rowLabel {
+  font-size: 11px;
+  color: var(--text-dimmer);
+  flex-shrink: 0;
+}
+
+.rowValue {
+  font-size: 11px;
+  color: var(--text-primary);
+  font-family: "JetBrains Mono", monospace;
+  text-align: right;
+  word-break: break-all;
+}
+
+.empty {
+  font-size: 11px;
+  color: var(--label-dim);
+  font-style: italic;
+}
