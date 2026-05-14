@@ -153,6 +153,15 @@ export function Ribbon({
             {tab.label}
           </button>
         ))}
+        <a
+          href="https://tally.so/r/BzjEMY"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.feedbackBtn}
+          title="Give feedback"
+        >
+          💬 Feedback
+        </a>
       </div>
 
       {/* Ribbon panel */}

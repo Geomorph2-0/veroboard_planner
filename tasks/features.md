@@ -40,6 +40,7 @@ Updated before every commit. Present to user for verification before pushing.
 - [x] Print function outputs board canvas only (ribbon and inspector hidden via CSS)
 - [x] New Project action resets store to empty canvas
 - [x] Deep Forge dark theme — darker near-black base with sharper copper accents
+- [x] Feedback button in tab bar (far right) — links to Tally feedback form
 
 ---
 
