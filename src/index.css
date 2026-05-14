@@ -10,20 +10,20 @@ html, body, #root {
 
 /* Dark theme (default) */
 :root {
-  --bg-app:       #110e09;
-  --bg-sidebar:   #1c1410;
-  --bg-input:     #12100c;
-  --bg-hover:     #2a1c0e;
-  --bg-canvas:    #1a1209;
-  --border:       #2e2010;
-  --border-soft:  #2a1c0e;
-  --text-primary: #e8d5b0;
-  --text-muted:   #9c7a52;
-  --text-dim:     #7c5e35;
-  --text-dimmer:  #7c6040;
-  --accent:       #c8922a;
-  --accent-bright:#f0b840;
-  --label-dim:    #4a3820;
+  --bg-app:       #080604;
+  --bg-sidebar:   #110d08;
+  --bg-input:     #0d0a06;
+  --bg-hover:     #1e1508;
+  --bg-canvas:    #0a0704;
+  --border:       #2e1f0a;
+  --border-soft:  #1e1508;
+  --text-primary: #f0ddb8;
+  --text-muted:   #b07840;
+  --text-dim:     #7a5228;
+  --text-dimmer:  #6a4820;
+  --accent:       #d4861e;
+  --accent-bright:#f5a830;
+  --label-dim:    #4a3010;
 }
 
 /* Light theme */
@@ -72,4 +72,23 @@ input[type="number"]::-webkit-outer-spin-button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #5a3e18;
+}
+
+@media print {
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  [data-print-canvas] {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
 }

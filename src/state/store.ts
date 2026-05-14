@@ -58,6 +58,7 @@ export interface PlannerState {
   removeComponent: (componentId: string) => boolean;
   undo: () => void;
   redo: () => void;
+  newProject: () => void;
   saveProject: () => void;
   loadProject: (file: File) => Promise<boolean>;
 }
@@ -232,6 +233,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       selectedWireId: null,
       selectedComponentId: null,
       statusMessage: "Redo."
+    });
+  },
+
+  newProject: () => {
+    set({
+      project: createProjectWithoutBoard(),
+      past: [],
+      future: [],
+      pendingHole: null,
+      selectedWireId: null,
+      selectedComponentId: null,
+      statusMessage: "New project. Add a board to get started."
     });
   },
 

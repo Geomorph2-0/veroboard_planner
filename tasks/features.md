@@ -31,6 +31,16 @@ Updated before every commit. Present to user for verification before pushing.
 - [x] Keyboard-safe — shortcuts disabled when typing in inputs
 - [x] Axis labels (row/col numbers) on canvas
 
+### v0.1.2 — Ribbon toolbar + print + dark theme
+- [x] Replaced vertical sidebar toolbar with Office-style horizontal ribbon (File / Home / Insert / View tabs)
+- [x] File tab — New, Open, Save, Print actions
+- [x] Home tab — Tools, History (Undo/Redo), Selection groups
+- [x] Insert tab — Board type toggle, board resize, component draft fields
+- [x] View tab — Dark / Light theme toggle
+- [x] Print function outputs board canvas only (ribbon and inspector hidden via CSS)
+- [x] New Project action resets store to empty canvas
+- [x] Deep Forge dark theme — darker near-black base with sharper copper accents
+
 ---
 
 ## Planned

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AddBoard } from "./components/AddBoard/AddBoard";
 import { BoardCanvas } from "./components/BoardCanvas/BoardCanvas";
 import { Inspector } from "./components/Inspector/Inspector";
-import { Toolbar } from "./components/Toolbar/Toolbar";
+import { Ribbon } from "./components/Ribbon/Ribbon";
 import { holeRefEquals } from "./model/board";
 import { HoleRef } from "./model/types";
 import { usePlannerStore } from "./state/store";
@@ -80,7 +80,8 @@ export default function App() {
 
   return (
     <div className={styles.shell}>
-      <Toolbar
+      <div data-print-hide>
+      <Ribbon
         projectName={store.project.name}
         tool={store.tool}
         boardType={store.project.board?.type ?? null}
@@ -107,40 +108,46 @@ export default function App() {
         onRedo={store.redo}
         onSaveProject={store.saveProject}
         onLoadProject={(file) => { void store.loadProject(file); }}
+        onNewProject={store.newProject}
         onToggleTheme={toggleTheme}
       />
+      </div>
 
-      <main className={styles.canvas}>
-        {store.project.board === null ? (
-          <AddBoard onAdd={store.addBoard} />
-        ) : (
-          <BoardCanvas
-            project={store.project}
-            pendingHole={store.pendingHole}
-            selectedWireId={store.selectedWireId}
-            selectedComponentId={store.selectedComponentId}
-            onHoleClick={handleHoleClick}
-            onWireSelect={(id) => {
-              store.setSelectedWireId(id);
-              store.setSelectedComponentId(null);
-              store.setStatusMessage("Wire selected. Press Delete to remove.");
-            }}
-            onComponentSelect={(id) => {
-              store.setSelectedComponentId(id);
-              store.setSelectedWireId(null);
-              store.setStatusMessage("Component selected. Press Delete to remove.");
-            }}
-          />
-        )}
-      </main>
+      <div className={styles.body}>
+        <main className={styles.canvas} data-print-canvas>
+          {store.project.board === null ? (
+            <AddBoard onAdd={store.addBoard} />
+          ) : (
+            <BoardCanvas
+              project={store.project}
+              pendingHole={store.pendingHole}
+              selectedWireId={store.selectedWireId}
+              selectedComponentId={store.selectedComponentId}
+              onHoleClick={handleHoleClick}
+              onWireSelect={(id) => {
+                store.setSelectedWireId(id);
+                store.setSelectedComponentId(null);
+                store.setStatusMessage("Wire selected. Press Delete to remove.");
+              }}
+              onComponentSelect={(id) => {
+                store.setSelectedComponentId(id);
+                store.setSelectedWireId(null);
+                store.setStatusMessage("Component selected. Press Delete to remove.");
+              }}
+            />
+          )}
+        </main>
 
-      <Inspector
-        project={store.project}
-        pendingHole={store.pendingHole}
-        selectedWireId={store.selectedWireId}
-        selectedComponentId={store.selectedComponentId}
-        statusMessage={store.statusMessage}
-      />
+        <div data-print-hide>
+        <Inspector
+          project={store.project}
+          pendingHole={store.pendingHole}
+          selectedWireId={store.selectedWireId}
+          selectedComponentId={store.selectedComponentId}
+          statusMessage={store.statusMessage}
+        />
+        </div>
+      </div>
     </div>
   );
 }
