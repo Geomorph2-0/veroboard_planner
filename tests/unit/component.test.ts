@@ -55,6 +55,19 @@ describe("component model", () => {
     expect(result.project.components[0].type).toBe("led");
   });
 
+  it.each([
+    { type: "diode" as const,     label: "D1", value: "1N4148", holeA: { row: 0, col: 0 }, holeB: { row: 0, col: 2 } },
+    { type: "inductor" as const,  label: "L1", value: "100µH",  holeA: { row: 0, col: 0 }, holeB: { row: 0, col: 2 } },
+    { type: "crystal" as const,   label: "X1", value: "16MHz",  holeA: { row: 0, col: 0 }, holeB: { row: 0, col: 2 } },
+    { type: "ic" as const,        label: "U1", value: "NE555",  holeA: { row: 0, col: 0 }, holeB: { row: 2, col: 2 } },
+    { type: "connector" as const, label: "J1", value: "2-pin",  holeA: { row: 0, col: 0 }, holeB: { row: 0, col: 2 } },
+  ])("places a $type", ({ type, label, value, holeA, holeB }) => {
+    const project = createEmptyProject(4, 4);
+    const result = placeProjectComponent(project, { type, label, value, holeA, holeB });
+    expect(result.error).toBeUndefined();
+    expect(result.project.components[0].type).toBe(type);
+  });
+
   it("removes an existing component", () => {
     const project = createEmptyProject(4, 4);
     const placed = placeProjectComponent(project, {

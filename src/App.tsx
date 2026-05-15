@@ -13,6 +13,18 @@ function formatHole(hole: HoleRef): string {
   return `row ${hole.row + 1}, col ${hole.col + 1}`;
 }
 
+function derivedLabel(type: ComponentType, holeA: HoleRef, holeB: HoleRef): string {
+  if (type === "ic") {
+    const pinsPerSide = Math.abs(holeA.row - holeB.row) + 1;
+    return `DIP-${pinsPerSide * 2}`;
+  }
+  if (type === "connector") {
+    const pins = Math.abs(holeA.row - holeB.row) + Math.abs(holeA.col - holeB.col) + 1;
+    return `${pins}-pin`;
+  }
+  return "";
+}
+
 export default function App() {
   const store = usePlannerStore();
   const [theme, setTheme] = useState<"dark" | "light">("light");
@@ -160,7 +172,10 @@ export default function App() {
       {pendingPlacement && (
         <ComponentPopup
           type={pendingPlacement.type}
-          defaultLabel={`${pendingPlacement.type.toUpperCase()}-${store.project.components.length + 1}`}
+          defaultLabel={(() => {
+            const hint = derivedLabel(pendingPlacement.type, pendingPlacement.holeA, pendingPlacement.holeB);
+            return hint || `${pendingPlacement.type.toUpperCase()}-${store.project.components.length + 1}`;
+          })()}
           onConfirm={(fields) => {
             store.placeComponent(pendingPlacement.type, pendingPlacement.holeA, pendingPlacement.holeB, fields);
             setPendingPlacement(null);

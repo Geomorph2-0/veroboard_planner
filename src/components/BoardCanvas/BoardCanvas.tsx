@@ -86,9 +86,10 @@ function ResistorBody({ from, to, selected }: ResistorBodyProps) {
         rx={3}
         className={selected ? `${styles.resistorBody} ${styles.selected}` : styles.resistorBody}
       />
-      <line x1={-bodyLen / 4} y1={-5} x2={-bodyLen / 4} y2={5} className={styles.colorBand} style={{ stroke: "#c0392b" }} />
-      <line x1={0} y1={-5} x2={0} y2={5} className={styles.colorBand} style={{ stroke: "#e67e22" }} />
-      <line x1={bodyLen / 4} y1={-5} x2={bodyLen / 4} y2={5} className={styles.colorBand} style={{ stroke: "#8e44ad" }} />
+      <line x1={-bodyLen / 3} y1={-5} x2={-bodyLen / 3} y2={5} className={styles.colorBand} style={{ stroke: "#c0392b" }} />
+      <line x1={-bodyLen / 9} y1={-5} x2={-bodyLen / 9} y2={5} className={styles.colorBand} style={{ stroke: "#e67e22" }} />
+      <line x1={bodyLen / 9} y1={-5} x2={bodyLen / 9} y2={5} className={styles.colorBand} style={{ stroke: "#8e44ad" }} />
+      <line x1={bodyLen / 3} y1={-5} x2={bodyLen / 3} y2={5} className={styles.colorBand} style={{ stroke: "#c8a000" }} />
     </g>
   );
 }
@@ -218,6 +219,182 @@ function CapacitorBody({ from, to, selected }: CapacitorBodyProps) {
         className={selected ? `${styles.capacitorBody} ${styles.selected}` : styles.capacitorBody}
       />
       <line x1={bodyLen / 2 - 4} y1={-6} x2={bodyLen / 2 - 4} y2={6} className={styles.capacitorStripe} />
+      <text x={-bodyLen / 2 + 3} y={2} fontSize={5} fill="#a0c4ff" fontFamily="monospace" pointerEvents="none">+</text>
+    </g>
+  );
+}
+
+interface TwoHoleBodyProps {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  selected: boolean;
+}
+
+function DiodeBody({ from, to, selected }: TwoHoleBodyProps) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2;
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
+  const glow = selected ? "drop-shadow(0 0 4px #60a5fa)" : undefined;
+
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
+      <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
+      <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
+      <rect
+        x={-bodyLen / 2} y={-4} width={bodyLen} height={8} rx={2}
+        fill="#2a2a2a" stroke={selected ? "#60a5fa" : "#555"} strokeWidth={selected ? 1.5 : 1}
+        className={styles.componentHit}
+      />
+      {/* cathode band */}
+      <line x1={bodyLen / 2 - 3} y1={-4} x2={bodyLen / 2 - 3} y2={4}
+        stroke={selected ? "#60a5fa" : "#aaaaaa"} strokeWidth={2} />
+    </g>
+  );
+}
+
+function InductorBody({ from, to, selected }: TwoHoleBodyProps) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2;
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
+  const glow = selected ? "drop-shadow(0 0 4px #fbbf24)" : undefined;
+  // 3 humps above the body
+  const humpR = bodyLen / 6;
+  const h1 = -bodyLen / 3 + humpR;
+  const h2 = 0;
+  const h3 = bodyLen / 3 - humpR;
+
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
+      <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
+      <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
+      <rect
+        x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={3}
+        fill="#7a3010" stroke={selected ? "#fbbf24" : "#5a2008"} strokeWidth={selected ? 1.5 : 1}
+        className={styles.componentHit}
+      />
+      {/* coil humps */}
+      {[h1, h2, h3].map((hx, i) => (
+        <path key={i}
+          d={`M ${hx - humpR} 0 A ${humpR} ${humpR} 0 0 1 ${hx + humpR} 0`}
+          fill="none" stroke={selected ? "#fbbf24" : "#c07840"} strokeWidth={1.2}
+        />
+      ))}
+    </g>
+  );
+}
+
+function CrystalBody({ from, to, selected }: TwoHoleBodyProps) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2;
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
+  const glow = selected ? "drop-shadow(0 0 4px #e2e8f0)" : undefined;
+
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
+      <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
+      <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
+      <rect
+        x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={2}
+        fill="#c0c0c0" stroke={selected ? "#e2e8f0" : "#888"} strokeWidth={selected ? 1.5 : 1}
+        className={styles.componentHit}
+      />
+      {/* centre seam line */}
+      <line x1={-bodyLen / 2 + 2} y1={0} x2={bodyLen / 2 - 2} y2={0}
+        stroke={selected ? "#e2e8f0" : "#999"} strokeWidth={0.8} opacity={0.7} />
+    </g>
+  );
+}
+
+function ICBody({ from, to, selected }: TwoHoleBodyProps) {
+  const left   = Math.min(from.x, to.x);
+  const right  = Math.max(from.x, to.x);
+  const top    = Math.min(from.y, to.y);
+  const bottom = Math.max(from.y, to.y);
+  const pinsPerSide = Math.round((bottom - top) / SPACING) + 1;
+  const pinYs = Array.from({ length: pinsPerSide }, (_, i) =>
+    top + i * ((bottom - top) / Math.max(pinsPerSide - 1, 1))
+  );
+  const bodyPad = 4;
+  const glow = selected ? "drop-shadow(0 0 5px #a78bfa)" : undefined;
+  const strokeCol = selected ? "#a78bfa" : "#444";
+
+  return (
+    <g style={{ filter: glow }}>
+      {pinYs.map((py, i) => (
+        <line key={`lp-${i}`} x1={left - 6} y1={py} x2={left} y2={py}
+          stroke={strokeCol} strokeWidth={1.5} />
+      ))}
+      {pinYs.map((py, i) => (
+        <line key={`rp-${i}`} x1={right} y1={py} x2={right + 6} y2={py}
+          stroke={strokeCol} strokeWidth={1.5} />
+      ))}
+      <rect
+        x={left + bodyPad} y={top - bodyPad}
+        width={right - left - bodyPad * 2} height={bottom - top + bodyPad * 2}
+        rx={2} fill="#1a1a1a" stroke={strokeCol} strokeWidth={selected ? 1.5 : 1}
+        className={styles.componentHit}
+      />
+      <path
+        d={`M ${left + bodyPad + 1} ${top - bodyPad} a 4 4 0 0 1 8 0`}
+        fill="#111" stroke={strokeCol} strokeWidth={0.8}
+      />
+      {pinYs.map((py, i) => (
+        <rect key={`ls-${i}`}
+          x={left + bodyPad - 3} y={py - 1.5} width={3} height={3}
+          fill={selected ? "#a78bfa" : "#555"} />
+      ))}
+      {pinYs.map((py, i) => (
+        <rect key={`rs-${i}`}
+          x={right - bodyPad} y={py - 1.5} width={3} height={3}
+          fill={selected ? "#a78bfa" : "#555"} />
+      ))}
+    </g>
+  );
+}
+
+function ConnectorBody({ from, to, selected }: TwoHoleBodyProps) {
+  const horizontal = Math.abs(from.y - to.y) < SPACING / 2;
+  const x1 = Math.min(from.x, to.x);
+  const x2 = Math.max(from.x, to.x);
+  const y1 = Math.min(from.y, to.y);
+  const y2 = Math.max(from.y, to.y);
+  const pinCount = horizontal
+    ? Math.round((x2 - x1) / SPACING) + 1
+    : Math.round((y2 - y1) / SPACING) + 1;
+  const h = 5;
+  const glow = selected ? "drop-shadow(0 0 4px #fbbf24)" : undefined;
+  const pins = Array.from({ length: pinCount }, (_, i) =>
+    horizontal
+      ? { x: x1 + i * SPACING, y: (from.y + to.y) / 2 }
+      : { x: (from.x + to.x) / 2, y: y1 + i * SPACING }
+  );
+
+  return (
+    <g style={{ filter: glow }}>
+      {horizontal
+        ? <rect x={x1 - h} y={y1 - h} width={x2 - x1 + h * 2} height={h * 2}
+            rx={1.5} fill="#333" stroke={selected ? "#fbbf24" : "#555"}
+            strokeWidth={selected ? 1.5 : 1} className={styles.componentHit} />
+        : <rect x={x1 - h} y={y1 - h} width={h * 2} height={y2 - y1 + h * 2}
+            rx={1.5} fill="#333" stroke={selected ? "#fbbf24" : "#555"}
+            strokeWidth={selected ? 1.5 : 1} className={styles.componentHit} />
+      }
+      {pins.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={1.8}
+          fill={selected ? "#fbbf24" : "#b8860b"} stroke="#111" strokeWidth={0.5} />
+      ))}
     </g>
   );
 }
@@ -338,7 +515,9 @@ export function BoardCanvas({
           const from = holeCenter(component.holeA);
           const to = holeCenter(component.holeB);
           const selected = component.id === selectedComponentId;
-          const midHoles = intermediateHoles(component);
+          const midHoles = (component.type === "ic" || component.type === "connector")
+            ? []
+            : intermediateHoles(component);
           return (
             <g
               key={component.id}
@@ -348,6 +527,18 @@ export function BoardCanvas({
             >
               {component.type === "resistor"
                 ? <ResistorBody from={from} to={to} selected={selected} />
+                : component.type === "capacitor"
+                ? <CapacitorBody from={from} to={to} selected={selected} />
+                : component.type === "diode"
+                ? <DiodeBody from={from} to={to} selected={selected} />
+                : component.type === "inductor"
+                ? <InductorBody from={from} to={to} selected={selected} />
+                : component.type === "crystal"
+                ? <CrystalBody from={from} to={to} selected={selected} />
+                : component.type === "ic"
+                ? <ICBody from={from} to={to} selected={selected} />
+                : component.type === "connector"
+                ? <ConnectorBody from={from} to={to} selected={selected} />
                 : component.type === "led"
                 ? ledSymbolStyle === "schematic"
                   ? <SchematicLEDBody from={from} to={to} selected={selected} value={component.value} />

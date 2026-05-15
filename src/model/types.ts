@@ -1,4 +1,4 @@
-export type ComponentType = "resistor" | "capacitor" | "led";
+export type ComponentType = "resistor" | "capacitor" | "diode" | "inductor" | "crystal" | "ic" | "connector" | "led";
 export type BoardType = "stripboard" | "perfboard";
 
 export interface HoleRef {

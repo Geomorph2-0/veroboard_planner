@@ -29,6 +29,22 @@ export function placeProjectComponent(project: ProjectFile, input: PlaceComponen
     return { project, error: "A component already occupies that hole pair." };
   }
 
+  if (input.type === "ic") {
+    const rd = Math.abs(input.holeA.row - input.holeB.row);
+    const cd = Math.abs(input.holeA.col - input.holeB.col);
+    if (rd < 1 || cd < 1) {
+      return { project, error: "IC: click pin 1 (top-left) then the last pin (bottom-right) diagonally." };
+    }
+  }
+
+  if (input.type === "connector") {
+    const sameRow = input.holeA.row === input.holeB.row;
+    const sameCol = input.holeA.col === input.holeB.col;
+    if (!sameRow && !sameCol) {
+      return { project, error: "Connector: both pins must be in the same row or same column." };
+    }
+  }
+
   const component: Component = {
     id: createId("component"),
     type: input.type,

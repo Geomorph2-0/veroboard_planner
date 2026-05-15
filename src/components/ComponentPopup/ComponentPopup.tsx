@@ -5,7 +5,30 @@ import styles from "./ComponentPopup.module.css";
 const TYPE_TITLES: Record<ComponentType, string> = {
   resistor: "Resistor",
   capacitor: "Capacitor",
-  led: "LED"
+  led: "LED",
+  diode: "Diode",
+  inductor: "Inductor",
+  crystal: "Crystal",
+  ic: "IC / Chip",
+  connector: "Connector",
+};
+
+const DEFAULT_VALUES: Partial<Record<ComponentType, string>> = {
+  diode: "1N4148",
+  inductor: "100µH",
+  crystal: "16MHz",
+  ic: "NE555",
+  connector: "2-pin",
+};
+
+const VALUE_PLACEHOLDERS: Partial<Record<ComponentType, string>> = {
+  resistor: "e.g. 10kΩ",
+  capacitor: "e.g. 100µF",
+  diode: "e.g. 1N4148",
+  inductor: "e.g. 100µH",
+  crystal: "e.g. 16MHz",
+  ic: "e.g. NE555",
+  connector: "e.g. 2-pin",
 };
 
 interface ComponentPopupProps {
@@ -24,7 +47,7 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
   const handleConfirm = () => {
     onConfirm({
       label: label.trim() || defaultLabel,
-      value: value.trim() || (type === "led" ? "red" : "unset"),
+      value: value.trim() || DEFAULT_VALUES[type] || (type === "led" ? "red" : "unset"),
       tolerance: tolerance.trim() || undefined,
       voltageRating: voltageRating.trim() || undefined
     });
@@ -76,7 +99,7 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
               <span className={styles.fieldLabel}>Value</span>
               <input
                 className={styles.input}
-                placeholder={type === "resistor" ? "e.g. 10kΩ" : "e.g. 100µF"}
+                placeholder={VALUE_PLACEHOLDERS[type] ?? "e.g. value"}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
               />
