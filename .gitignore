@@ -1,6 +1,36 @@
+# Dependencies
 node_modules
+
+# Build output
 dist
-.DS_Store
+
+# Environment files (contain secrets)
 *.local
+.env
+.env.*
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Vitest coverage
+coverage/
+
+# Project-specific
 legacy/
 .claude/
+research/
