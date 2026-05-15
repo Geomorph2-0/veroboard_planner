@@ -53,7 +53,7 @@ export interface PlannerState {
   setBoardType: (type: BoardType) => void;
   resizeProjectBoard: (rows: number, cols: number) => boolean;
   connectHoles: (from: HoleRef, to: HoleRef) => boolean;
-  placeComponent: (type: ComponentType, holeA: HoleRef, holeB: HoleRef) => boolean;
+  placeComponent: (type: ComponentType, holeA: HoleRef, holeB: HoleRef, draft?: Partial<ComponentDraft>) => boolean;
   disconnectWire: (wireId: string) => boolean;
   removeComponent: (componentId: string) => boolean;
   undo: () => void;
@@ -170,16 +170,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     return true;
   },
 
-  placeComponent: (type, holeA, holeB) => {
+  placeComponent: (type, holeA, holeB, draft?) => {
     const { project, componentDraft, past } = get();
     if (!project.board) { set({ statusMessage: "Add a board first." }); return false; }
+    const merged = { ...componentDraft, ...draft };
     const defaultLabel = `${type.toUpperCase()}-${project.components.length + 1}`;
     const result = placeProjectComponent(project, {
       type,
-      label: componentDraft.label || defaultLabel,
-      value: componentDraft.value || "unset",
-      tolerance: componentDraft.tolerance || undefined,
-      voltageRating: componentDraft.voltageRating || undefined,
+      label: merged.label || defaultLabel,
+      value: merged.value || "unset",
+      tolerance: merged.tolerance || undefined,
+      voltageRating: merged.voltageRating || undefined,
       holeA,
       holeB
     });

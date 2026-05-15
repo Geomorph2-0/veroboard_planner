@@ -6,6 +6,7 @@ const PADDING = 28;
 const PAD_RADIUS = 6.5;
 const HOLE_RADIUS = 4.2;
 const STRIP_WIDTH = 2.5;
+const MAX_BODY_LEN = SPACING - 10; // body stays within one hole-spacing
 
 const WIRE_COLORS = [
   "#e05c5c", "#4a9eff", "#4caf50", "#ffb347",
@@ -46,7 +47,7 @@ function ResistorBody({ from, to, selected }: ResistorBodyProps) {
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
   const cx = (from.x + to.x) / 2;
   const cy = (from.y + to.y) / 2;
-  const bodyLen = Math.max(len - 10, 12);
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
 
   return (
     <g transform={`translate(${cx},${cy}) rotate(${angle})`}>
@@ -80,7 +81,7 @@ function CapacitorBody({ from, to, selected }: CapacitorBodyProps) {
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
   const cx = (from.x + to.x) / 2;
   const cy = (from.y + to.y) / 2;
-  const bodyLen = Math.max(len - 10, 12);
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
 
   return (
     <g transform={`translate(${cx},${cy}) rotate(${angle})`}>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { AddBoard } from "./components/AddBoard/AddBoard";
 import { BoardCanvas } from "./components/BoardCanvas/BoardCanvas";
+import { ComponentPopup } from "./components/ComponentPopup/ComponentPopup";
 import { Inspector } from "./components/Inspector/Inspector";
 import { Ribbon } from "./components/Ribbon/Ribbon";
 import { holeRefEquals } from "./model/board";
-import { HoleRef } from "./model/types";
+import { ComponentType, HoleRef } from "./model/types";
 import { usePlannerStore } from "./state/store";
 import styles from "./App.module.css";
 
@@ -15,6 +16,7 @@ function formatHole(hole: HoleRef): string {
 export default function App() {
   const store = usePlannerStore();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [pendingPlacement, setPendingPlacement] = useState<{ holeA: HoleRef; holeB: HoleRef; type: ComponentType } | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -71,11 +73,13 @@ export default function App() {
 
     if (store.tool === "wire") {
       store.connectHoles(store.pendingHole, hole);
+      store.setPendingHole(null);
     } else {
-      store.placeComponent(store.tool, store.pendingHole, hole);
+      const holeA = store.pendingHole;
+      store.setPendingHole(null);
+      setPendingPlacement({ holeA, holeB: hole, type: store.tool as ComponentType });
+      store.setStatusMessage("Fill in component details.");
     }
-
-    store.setPendingHole(null);
   };
 
   return (
@@ -87,7 +91,6 @@ export default function App() {
         boardType={store.project.board?.type ?? null}
         rows={store.project.board?.rows ?? 14}
         cols={store.project.board?.cols ?? 24}
-        componentDraft={store.componentDraft}
         canDisconnectWire={Boolean(store.selectedWireId)}
         canRemoveComponent={Boolean(store.selectedComponentId)}
         canUndo={store.past.length > 0}
@@ -97,7 +100,6 @@ export default function App() {
         onToolChange={store.setTool}
         onBoardTypeChange={store.setBoardType}
         onResizeBoard={store.resizeProjectBoard}
-        onComponentDraftChange={store.updateComponentDraft}
         onDisconnectSelectedWire={() => {
           if (store.selectedWireId) store.disconnectWire(store.selectedWireId);
         }}
@@ -148,6 +150,18 @@ export default function App() {
         />
         </div>
       </div>
+
+      {pendingPlacement && (
+        <ComponentPopup
+          type={pendingPlacement.type}
+          defaultLabel={`${pendingPlacement.type.toUpperCase()}-${store.project.components.length + 1}`}
+          onConfirm={(fields) => {
+            store.placeComponent(pendingPlacement.type, pendingPlacement.holeA, pendingPlacement.holeB, fields);
+            setPendingPlacement(null);
+          }}
+          onCancel={() => setPendingPlacement(null)}
+        />
+      )}
     </div>
   );
 }

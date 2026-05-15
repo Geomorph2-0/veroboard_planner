@@ -1,7 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { EditorTool } from "../../editor/interactions";
 import { BoardType } from "../../model/types";
-import { ComponentDraft } from "../../state/store";
 import styles from "./Ribbon.module.css";
 
 type RibbonTab = "file" | "home" | "insert" | "view";
@@ -12,7 +11,6 @@ interface RibbonProps {
   boardType: BoardType | null;
   rows: number;
   cols: number;
-  componentDraft: ComponentDraft;
   canDisconnectWire: boolean;
   canRemoveComponent: boolean;
   canUndo: boolean;
@@ -22,7 +20,6 @@ interface RibbonProps {
   onToolChange: (tool: EditorTool) => void;
   onBoardTypeChange: (type: BoardType) => void;
   onResizeBoard: (rows: number, cols: number) => void;
-  onComponentDraftChange: (patch: Partial<ComponentDraft>) => void;
   onDisconnectSelectedWire: () => void;
   onRemoveSelectedComponent: () => void;
   onUndo: () => void;
@@ -76,7 +73,6 @@ export function Ribbon({
   boardType,
   rows,
   cols,
-  componentDraft,
   canDisconnectWire,
   canRemoveComponent,
   canUndo,
@@ -86,7 +82,6 @@ export function Ribbon({
   onToolChange,
   onBoardTypeChange,
   onResizeBoard,
-  onComponentDraftChange,
   onDisconnectSelectedWire,
   onRemoveSelectedComponent,
   onUndo,
@@ -187,12 +182,6 @@ export function Ribbon({
 
         {activeTab === "home" && (
           <>
-            <Group label="Tools">
-              <RibbonBtn icon="⌇" label="Wire" onClick={() => onToolChange("wire")} active={tool === "wire"} />
-              <RibbonBtn icon="▭" label="Resistor" onClick={() => onToolChange("resistor")} active={tool === "resistor"} />
-              <RibbonBtn icon="⊣⊢" label="Capacitor" onClick={() => onToolChange("capacitor")} active={tool === "capacitor"} />
-            </Group>
-            <Divider />
             <Group label="History">
               <RibbonBtn icon="↩" label="Undo" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
               <RibbonBtn icon="↪" label="Redo" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" />
@@ -207,6 +196,12 @@ export function Ribbon({
 
         {activeTab === "insert" && (
           <>
+            <Group label="Components">
+              <RibbonBtn icon="⌇" label="Wire" onClick={() => onToolChange("wire")} active={tool === "wire"} />
+              <RibbonBtn icon="▭" label="Resistor" onClick={() => onToolChange("resistor")} active={tool === "resistor"} />
+              <RibbonBtn icon="⊣⊢" label="Capacitor" onClick={() => onToolChange("capacitor")} active={tool === "capacitor"} />
+            </Group>
+            <Divider />
             <Group label="Board">
               <RibbonBtn icon="≡" label="Stripboard" onClick={() => onBoardTypeChange("stripboard")} active={boardType === "stripboard"} disabled={!boardType} />
               <RibbonBtn icon="⊞" label="Perfboard" onClick={() => onBoardTypeChange("perfboard")} active={boardType === "perfboard"} disabled={!boardType} />
@@ -226,35 +221,6 @@ export function Ribbon({
                 <button type="button" className={styles.applyBtn} onClick={() => onResizeBoard(parseInt(rowsInput, 10), parseInt(colsInput, 10))}>Apply</button>
               </div>
             </Group>
-            {tool !== "wire" && (
-              <>
-                <Divider />
-                <Group label="Component">
-                  <div className={styles.compFields}>
-                    <label className={styles.compField}>
-                      <span className={styles.sizeFieldLabel}>Label</span>
-                      <input className={styles.compInput} placeholder="e.g. R1" value={componentDraft.label} onChange={(e) => onComponentDraftChange({ label: e.target.value })} />
-                    </label>
-                    <label className={styles.compField}>
-                      <span className={styles.sizeFieldLabel}>Value</span>
-                      <input className={styles.compInput} placeholder="e.g. 10kΩ" value={componentDraft.value} onChange={(e) => onComponentDraftChange({ value: e.target.value })} />
-                    </label>
-                    {tool === "resistor" && (
-                      <label className={styles.compField}>
-                        <span className={styles.sizeFieldLabel}>Tolerance</span>
-                        <input className={styles.compInput} placeholder="e.g. 5%" value={componentDraft.tolerance} onChange={(e) => onComponentDraftChange({ tolerance: e.target.value })} />
-                      </label>
-                    )}
-                    {tool === "capacitor" && (
-                      <label className={styles.compField}>
-                        <span className={styles.sizeFieldLabel}>Voltage</span>
-                        <input className={styles.compInput} placeholder="e.g. 16V" value={componentDraft.voltageRating} onChange={(e) => onComponentDraftChange({ voltageRating: e.target.value })} />
-                      </label>
-                    )}
-                  </div>
-                </Group>
-              </>
-            )}
           </>
         )}
 
