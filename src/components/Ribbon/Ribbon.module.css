@@ -69,6 +69,27 @@
   color: var(--accent);
 }
 
+.logoutBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.logoutBtn:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+
 /* ── Tab bar ── */
 .tabBar {
   display: flex;

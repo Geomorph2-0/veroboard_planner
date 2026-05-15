@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
+import { supabase } from "../../lib/supabase";
 
 const WIRE_PALETTE = [
   "#e05c5c", "#ff8080", "#c0392b",
@@ -370,6 +371,14 @@ export function Ribbon({
           title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
         >
           {theme === "dark" ? "☀" : "☾"}
+        </button>
+        <button
+          type="button"
+          className={styles.logoutBtn}
+          onClick={() => supabase.auth.signOut()}
+          title="Log out"
+        >
+          ⏻
         </button>
       </div>
 
