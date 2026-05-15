@@ -72,3 +72,43 @@
   color: var(--label-dim);
   font-style: italic;
 }
+
+.rowInput {
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  padding: 2px 5px;
+  width: 90px;
+  outline: none;
+  text-align: right;
+}
+
+.rowEditable:hover {
+  color: var(--accent-bright);
+  text-decoration: underline dotted;
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 0 4px;
+}
+
+.breakdownItem {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.wireSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}

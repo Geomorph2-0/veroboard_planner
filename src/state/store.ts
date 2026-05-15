@@ -5,6 +5,7 @@ import { resizeBoard } from "../model/board";
 import { connectProjectHoles, disconnectProjectWire } from "../model/wire";
 import {
   BoardType,
+  Component,
   ComponentType,
   HoleRef,
   ProjectFile,
@@ -58,6 +59,7 @@ export interface PlannerState {
   placeComponent: (type: ComponentType, holeA: HoleRef, holeB: HoleRef, draft?: Partial<ComponentDraft>) => boolean;
   disconnectWire: (wireId: string) => boolean;
   removeComponent: (componentId: string) => boolean;
+  updateComponent: (id: string, fields: Partial<Pick<Component, "label" | "value" | "tolerance" | "voltageRating">>) => void;
   undo: () => void;
   redo: () => void;
   newProject: () => void;
@@ -211,6 +213,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (result.error) { set({ statusMessage: result.error }); return false; }
     set({ past: pushHistory(past, project), future: [], project: result.project, selectedComponentId: null, statusMessage: "Component removed." });
     return true;
+  },
+
+  updateComponent: (id, fields) => {
+    const { project, past } = get();
+    const updated = {
+      ...project,
+      components: project.components.map(c => c.id === id ? { ...c, ...fields } : c),
+      updatedAt: toUtcTimestamp()
+    };
+    set({ past: pushHistory(past, project), future: [], project: updated });
   },
 
   undo: () => {

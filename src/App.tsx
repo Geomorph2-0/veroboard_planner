@@ -165,6 +165,7 @@ export default function App() {
           selectedWireId={store.selectedWireId}
           selectedComponentId={store.selectedComponentId}
           statusMessage={store.statusMessage}
+          onUpdateComponent={store.updateComponent}
         />
         </div>
       </div>
