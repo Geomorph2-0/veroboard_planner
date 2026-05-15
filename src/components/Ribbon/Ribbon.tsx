@@ -226,6 +226,81 @@ function FileMenuBtn({ onNew, onOpen, onSave, onPrint }: {
   );
 }
 
+const COMPONENT_ITEMS: { type: EditorTool; icon: string; label: string }[] = [
+  { type: "resistor",  icon: "▭",  label: "Resistor"  },
+  { type: "capacitor", icon: "⊣⊢", label: "Capacitor" },
+  { type: "led",       icon: "◉",  label: "LED"        },
+  { type: "diode",     icon: "▷|", label: "Diode"      },
+  { type: "inductor",  icon: "∿",  label: "Inductor"   },
+  { type: "crystal",   icon: "◇",  label: "Crystal"    },
+  { type: "ic",        icon: "▣",  label: "IC"         },
+  { type: "connector", icon: "⊞",  label: "Connector"  },
+];
+
+const COMPONENT_TOOLS = new Set(COMPONENT_ITEMS.map(c => c.type));
+
+function ComponentsMenuBtn({ tool, onToolChange }: { tool: EditorTool; onToolChange: (t: EditorTool) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const inBtn = btnRef.current?.contains(e.target as Node);
+      const inDrop = dropRef.current?.contains(e.target as Node);
+      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleClick = () => {
+    if (open) { setOpen(false); setPos(null); return; }
+    const rect = btnRef.current!.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+    setOpen(true);
+  };
+
+  const isActive = COMPONENT_TOOLS.has(tool);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className={`${styles.btn} ${isActive ? styles.btnActive : ""}`}
+        onClick={handleClick}
+        title="Choose component type"
+      >
+        <span className={styles.btnIcon}>⬡</span>
+        <span className={styles.btnLabel}>Components</span>
+      </button>
+      {open && pos && ReactDOM.createPortal(
+        <div
+          ref={dropRef}
+          className={styles.compMenu}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
+          {COMPONENT_ITEMS.map(({ type, icon, label }) => (
+            <button
+              key={type}
+              type="button"
+              className={`${styles.compMenuItem} ${tool === type ? styles.compMenuItemActive : ""}`}
+              onClick={() => { onToolChange(type); setOpen(false); setPos(null); }}
+            >
+              <span className={styles.compMenuIcon}>{icon}</span>
+              <span className={styles.compMenuLabel}>{label}</span>
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 export function Ribbon({
   projectName,
   tool,
@@ -355,11 +430,12 @@ export function Ribbon({
 
         {activeTab === "insert" && (
           <>
-            <Group label="Components">
+            <Group label="Wire">
               <WireBtn active={tool === "wire"} wireColour={wireColour} onSelect={() => onToolChange("wire")} onColourChange={onWireColourChange} />
-              <RibbonBtn icon="▭" label="Resistor" onClick={() => onToolChange("resistor")} active={tool === "resistor"} />
-              <RibbonBtn icon="⊣⊢" label="Capacitor" onClick={() => onToolChange("capacitor")} active={tool === "capacitor"} />
-              <RibbonBtn icon="◐" label="LED" onClick={() => onToolChange("led")} active={tool === "led"} />
+            </Group>
+            <Divider />
+            <Group label="Components">
+              <ComponentsMenuBtn tool={tool} onToolChange={onToolChange} />
             </Group>
             <Divider />
             <Group label="Board">
