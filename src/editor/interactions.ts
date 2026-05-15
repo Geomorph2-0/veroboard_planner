@@ -1,7 +1,7 @@
 import { holeRefEquals } from "../model/board";
 import { HoleRef } from "../model/types";
 
-export type EditorTool = "wire" | "resistor" | "capacitor";
+export type EditorTool = "wire" | "resistor" | "capacitor" | "led";
 
 export function togglePendingHole(current: HoleRef | null, clicked: HoleRef): HoleRef | null {
   if (!current) {
@@ -22,6 +22,10 @@ export function describeTool(tool: EditorTool): string {
 
   if (tool === "resistor") {
     return "Resistor placement mode";
+  }
+
+  if (tool === "led") {
+    return "LED placement mode";
   }
 
   return "Capacitor placement mode";

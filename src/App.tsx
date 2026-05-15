@@ -15,7 +15,8 @@ function formatHole(hole: HoleRef): string {
 
 export default function App() {
   const store = usePlannerStore();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [ledSymbolStyle, setLedSymbolStyle] = useState<"physical" | "schematic">("physical");
   const [pendingPlacement, setPendingPlacement] = useState<{ holeA: HoleRef; holeB: HoleRef; type: ComponentType } | null>(null);
 
   useEffect(() => {
@@ -112,6 +113,10 @@ export default function App() {
         onLoadProject={(file) => { void store.loadProject(file); }}
         onNewProject={store.newProject}
         onToggleTheme={toggleTheme}
+        ledSymbolStyle={ledSymbolStyle}
+        onToggleLedSymbolStyle={() => setLedSymbolStyle(s => s === "physical" ? "schematic" : "physical")}
+        wireColour={store.wireColour}
+        onWireColourChange={store.setWireColour}
       />
       </div>
 
@@ -125,6 +130,7 @@ export default function App() {
               pendingHole={store.pendingHole}
               selectedWireId={store.selectedWireId}
               selectedComponentId={store.selectedComponentId}
+              ledSymbolStyle={ledSymbolStyle}
               onHoleClick={handleHoleClick}
               onWireSelect={(id) => {
                 store.setSelectedWireId(id);

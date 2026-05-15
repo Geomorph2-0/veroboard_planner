@@ -101,6 +101,10 @@ src/components/   React UI. Reads from store, calls store actions.
 5. **Document Results**: Add review section to `tasks/todo.md`
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 
+## Git Conventions
+
+- **No co-author credits**: Never add `Co-Authored-By:` or any Claude/AI attribution lines to commit messages in this repo.
+
 ## Core Principles
 
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.

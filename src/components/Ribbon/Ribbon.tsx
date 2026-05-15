@@ -1,9 +1,21 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
+
+const WIRE_PALETTE = [
+  "#e05c5c", "#ff8080", "#c0392b",
+  "#4a9eff", "#38bdf8", "#1d6fa5",
+  "#4caf50", "#a3e635", "#2e7d32",
+  "#ffb347", "#fb923c", "#e67e22",
+  "#c084fc", "#9b59b6", "#e91e8c",
+  "#ffee58", "#f9a825",
+  "#ffffff", "#b0b0b0", "#555555",
+  "#e26d1a",
+];
 import { EditorTool } from "../../editor/interactions";
 import { BoardType } from "../../model/types";
 import styles from "./Ribbon.module.css";
 
-type RibbonTab = "file" | "home" | "insert" | "view";
+type RibbonTab = "home" | "insert" | "view";
 
 interface RibbonProps {
   projectName: string;
@@ -16,7 +28,11 @@ interface RibbonProps {
   canUndo: boolean;
   canRedo: boolean;
   theme: "dark" | "light";
+  ledSymbolStyle: "physical" | "schematic";
+  wireColour: string | null;
   onProjectNameChange: (name: string) => void;
+  onToggleLedSymbolStyle: () => void;
+  onWireColourChange: (colour: string) => void;
   onToolChange: (tool: EditorTool) => void;
   onBoardTypeChange: (type: BoardType) => void;
   onResizeBoard: (rows: number, cols: number) => void;
@@ -67,6 +83,149 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function WireBtn({ active, wireColour, onSelect, onColourChange }: {
+  active: boolean;
+  wireColour: string | null;
+  onSelect: () => void;
+  onColourChange: (c: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const arrowRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const inWrap = wrapRef.current?.contains(e.target as Node);
+      const inDrop = dropRef.current?.contains(e.target as Node);
+      if (!inWrap && !inDrop) { setOpen(false); setPos(null); }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleArrowClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (open) { setOpen(false); setPos(null); return; }
+    const rect = arrowRef.current!.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+    setOpen(true);
+  };
+
+  const dotColour = wireColour ?? "#e26d1a";
+
+  return (
+    <div ref={wrapRef} className={styles.wireBtn}>
+      <button
+        type="button"
+        className={`${styles.wireBtnMain} ${active ? styles.btnActive : ""}`}
+        onClick={onSelect}
+      >
+        <span className={styles.btnIcon}>⌇</span>
+        <span className={styles.btnLabel}>Wire</span>
+      </button>
+      <button
+        ref={arrowRef}
+        type="button"
+        className={`${styles.wireBtnArrow} ${active ? styles.btnActive : ""}`}
+        onClick={handleArrowClick}
+        title="Wire colour"
+      >
+        <span className={styles.wireDot} style={{ background: dotColour }} />
+        <span style={{ fontSize: 8 }}>▾</span>
+      </button>
+      {open && pos && ReactDOM.createPortal(
+        <div
+          ref={dropRef}
+          className={styles.wireDropdown}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
+          {WIRE_PALETTE.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`${styles.wireSwatch} ${c === dotColour ? styles.wireSwatchActive : ""}`}
+              style={{ background: c }}
+              title={c}
+              onClick={() => { onColourChange(c); setOpen(false); setPos(null); }}
+            />
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+function FileMenuBtn({ onNew, onOpen, onSave, onPrint }: {
+  onNew: () => void;
+  onOpen: () => void;
+  onSave: () => void;
+  onPrint: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const inBtn = btnRef.current?.contains(e.target as Node);
+      const inDrop = dropRef.current?.contains(e.target as Node);
+      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleClick = () => {
+    if (open) { setOpen(false); setPos(null); return; }
+    const rect = btnRef.current!.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+    setOpen(true);
+  };
+
+  const close = () => { setOpen(false); setPos(null); };
+
+  const items = [
+    { icon: "🗋", label: "New",   action: () => { onNew();   close(); } },
+    { icon: "📂", label: "Open",  action: () => { onOpen();  close(); } },
+    { icon: "💾", label: "Save",  action: () => { onSave();  close(); } },
+    { icon: "🖨", label: "Print", action: () => { onPrint(); close(); } },
+  ];
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className={`${styles.tab} ${open ? styles.tabActive : ""}`}
+        onClick={handleClick}
+      >
+        File
+      </button>
+      {open && pos && ReactDOM.createPortal(
+        <div
+          ref={dropRef}
+          className={styles.fileMenu}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
+          {items.map(({ icon, label, action }) => (
+            <button key={label} type="button" className={styles.fileMenuItem} onClick={action}>
+              <span className={styles.fileMenuIcon}>{icon}</span>
+              {label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 export function Ribbon({
   projectName,
   tool,
@@ -89,7 +248,11 @@ export function Ribbon({
   onSaveProject,
   onLoadProject,
   onNewProject,
-  onToggleTheme
+  onToggleTheme,
+  ledSymbolStyle,
+  onToggleLedSymbolStyle,
+  wireColour,
+  onWireColourChange
 }: RibbonProps) {
   const [activeTab, setActiveTab] = useState<RibbonTab>("home");
   const [rowsInput, setRowsInput] = useState(String(rows));
@@ -109,7 +272,6 @@ export function Ribbon({
   };
 
   const tabs: { id: RibbonTab; label: string }[] = [
-    { id: "file", label: "File" },
     { id: "home", label: "Home" },
     { id: "insert", label: "Insert" },
     { id: "view", label: "View" }
@@ -138,6 +300,12 @@ export function Ribbon({
 
       {/* Tab bar */}
       <div className={styles.tabBar}>
+        <FileMenuBtn
+          onNew={onNewProject}
+          onOpen={() => fileInputRef.current?.click()}
+          onSave={onSaveProject}
+          onPrint={() => window.print()}
+        />
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -159,26 +327,17 @@ export function Ribbon({
         </a>
       </div>
 
+      {/* Hidden file input — always mounted */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        className={styles.hiddenInput}
+        onChange={handleLoadFile}
+      />
+
       {/* Ribbon panel */}
       <div className={styles.panel}>
-
-        {activeTab === "file" && (
-          <>
-            <Group label="File">
-              <RibbonBtn icon="🗋" label="New" onClick={onNewProject} title="New project" />
-              <RibbonBtn icon="📂" label="Open" onClick={() => fileInputRef.current?.click()} title="Open JSON" />
-              <RibbonBtn icon="💾" label="Save" onClick={onSaveProject} title="Save JSON" />
-              <RibbonBtn icon="🖨" label="Print" onClick={() => window.print()} title="Print schematic" />
-            </Group>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              className={styles.hiddenInput}
-              onChange={handleLoadFile}
-            />
-          </>
-        )}
 
         {activeTab === "home" && (
           <>
@@ -197,9 +356,10 @@ export function Ribbon({
         {activeTab === "insert" && (
           <>
             <Group label="Components">
-              <RibbonBtn icon="⌇" label="Wire" onClick={() => onToolChange("wire")} active={tool === "wire"} />
+              <WireBtn active={tool === "wire"} wireColour={wireColour} onSelect={() => onToolChange("wire")} onColourChange={onWireColourChange} />
               <RibbonBtn icon="▭" label="Resistor" onClick={() => onToolChange("resistor")} active={tool === "resistor"} />
               <RibbonBtn icon="⊣⊢" label="Capacitor" onClick={() => onToolChange("capacitor")} active={tool === "capacitor"} />
+              <RibbonBtn icon="◐" label="LED" onClick={() => onToolChange("led")} active={tool === "led"} />
             </Group>
             <Divider />
             <Group label="Board">
@@ -228,6 +388,12 @@ export function Ribbon({
           <Group label="Theme">
             <RibbonBtn icon="☾" label="Dark" onClick={() => theme !== "dark" && onToggleTheme()} active={theme === "dark"} />
             <RibbonBtn icon="☀" label="Light" onClick={() => theme !== "light" && onToggleTheme()} active={theme === "light"} />
+          </Group>
+        )}
+        {activeTab === "view" && (
+          <Group label="LED Symbol">
+            <RibbonBtn icon="◉" label="Physical" onClick={() => ledSymbolStyle !== "physical" && onToggleLedSymbolStyle()} active={ledSymbolStyle === "physical"} />
+            <RibbonBtn icon="◁|" label="Schematic" onClick={() => ledSymbolStyle !== "schematic" && onToggleLedSymbolStyle()} active={ledSymbolStyle === "schematic"} />
           </Group>
         )}
 

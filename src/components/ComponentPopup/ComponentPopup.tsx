@@ -2,6 +2,12 @@ import { useState } from "react";
 import { ComponentType } from "../../model/types";
 import styles from "./ComponentPopup.module.css";
 
+const TYPE_TITLES: Record<ComponentType, string> = {
+  resistor: "Resistor",
+  capacitor: "Capacitor",
+  led: "LED"
+};
+
 interface ComponentPopupProps {
   type: ComponentType;
   defaultLabel: string;
@@ -18,7 +24,7 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
   const handleConfirm = () => {
     onConfirm({
       label: label.trim() || defaultLabel,
-      value: value.trim() || "unset",
+      value: value.trim() || (type === "led" ? "red" : "unset"),
       tolerance: tolerance.trim() || undefined,
       voltageRating: voltageRating.trim() || undefined
     });
@@ -33,7 +39,7 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
     <div className={styles.overlay} onClick={onCancel}>
       <div className={styles.popup} onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
         <div className={styles.header}>
-          <span className={styles.title}>{type === "resistor" ? "Resistor" : "Capacitor"}</span>
+          <span className={styles.title}>{TYPE_TITLES[type]}</span>
           <button className={styles.closeBtn} onClick={onCancel} title="Cancel">✕</button>
         </div>
         <div className={styles.fields}>
@@ -47,15 +53,35 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
               autoFocus
             />
           </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Value</span>
-            <input
-              className={styles.input}
-              placeholder={type === "resistor" ? "e.g. 10kΩ" : "e.g. 100µF"}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-          </label>
+          {type === "led" ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Colour</span>
+              <select
+                className={styles.input}
+                value={value || "red"}
+                onChange={(e) => setValue(e.target.value)}
+              >
+                <option value="red">Red</option>
+                <option value="orange">Orange</option>
+                <option value="yellow">Yellow</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="white">White</option>
+                <option value="ir">IR (Infrared)</option>
+                <option value="uv">UV (Ultraviolet)</option>
+              </select>
+            </label>
+          ) : (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Value</span>
+              <input
+                className={styles.input}
+                placeholder={type === "resistor" ? "e.g. 10kΩ" : "e.g. 100µF"}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+              />
+            </label>
+          )}
           {type === "resistor" && (
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Tolerance</span>

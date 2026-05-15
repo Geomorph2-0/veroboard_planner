@@ -40,6 +40,21 @@ describe("component model", () => {
     expect(second.project.components).toHaveLength(1);
   });
 
+  it("places an LED", () => {
+    const project = createEmptyProject(4, 4);
+    const result = placeProjectComponent(project, {
+      type: "led",
+      label: "D1",
+      value: "Red",
+      holeA: { row: 0, col: 0 },
+      holeB: { row: 0, col: 2 }
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.project.components).toHaveLength(1);
+    expect(result.project.components[0].type).toBe("led");
+  });
+
   it("removes an existing component", () => {
     const project = createEmptyProject(4, 4);
     const placed = placeProjectComponent(project, {

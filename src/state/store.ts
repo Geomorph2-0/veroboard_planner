@@ -41,8 +41,10 @@ export interface PlannerState {
   selectedComponentId: string | null;
   statusMessage: string;
   componentDraft: ComponentDraft;
+  wireColour: string | null;
 
   setTool: (tool: EditorTool) => void;
+  setWireColour: (colour: string | null) => void;
   setPendingHole: (hole: HoleRef | null) => void;
   setSelectedWireId: (id: string | null) => void;
   setSelectedComponentId: (id: string | null) => void;
@@ -77,6 +79,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   selectedComponentId: null,
   statusMessage: "Add a board to get started.",
   componentDraft: defaultDraft,
+  wireColour: null,
+
+  setWireColour: (colour) => set({ wireColour: colour }),
 
   setTool: (tool) => {
     set({
@@ -164,7 +169,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   connectHoles: (from, to) => {
     const { project, past } = get();
     if (!project.board) { set({ statusMessage: "Add a board first." }); return false; }
-    const result = connectProjectHoles(project, from, to);
+    const colour = get().wireColour ?? undefined;
+    const result = connectProjectHoles(project, from, to, colour);
     if (result.error) { set({ statusMessage: result.error }); return false; }
     set({ past: pushHistory(past, project), future: [], project: result.project, statusMessage: "Wire created." });
     return true;

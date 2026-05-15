@@ -9,8 +9,14 @@ const STRIP_WIDTH = 2.5;
 const MAX_BODY_LEN = SPACING - 10; // body stays within one hole-spacing
 
 const WIRE_COLORS = [
-  "#e05c5c", "#4a9eff", "#4caf50", "#ffb347",
-  "#c084fc", "#38bdf8", "#fb923c", "#a3e635"
+  "#e05c5c", "#ff8080", "#c0392b",           // reds
+  "#4a9eff", "#38bdf8", "#1d6fa5",           // blues
+  "#4caf50", "#a3e635", "#2e7d32",           // greens
+  "#ffb347", "#fb923c", "#e67e22",           // oranges
+  "#c084fc", "#9b59b6", "#e91e8c",           // purples/pink
+  "#ffee58", "#f9a825",                       // yellows
+  "#ffffff", "#b0b0b0", "#555555",           // whites/greys
+  "#e26d1a",                                  // default warm orange
 ];
 
 function holeCenter(hole: HoleRef) {
@@ -87,6 +93,103 @@ function ResistorBody({ from, to, selected }: ResistorBodyProps) {
   );
 }
 
+const LED_COLOURS: Record<string, string> = {
+  red: "#ff4040", green: "#40e040", blue: "#4488ff",
+  yellow: "#ffee40", white: "#f0f0ff", orange: "#ff8c00",
+  ir: "#cc88ff", uv: "#9966ff"
+};
+
+function ledColour(value: string): string {
+  const key = value.toLowerCase().split(/[\s,]/)[0];
+  return LED_COLOURS[key] ?? "#ffcc44";
+}
+
+interface LEDBodyProps {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  selected: boolean;
+  value: string;
+}
+
+function SchematicLEDBody({ from, to, selected, value }: LEDBodyProps) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2;
+  const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
+  const h = 6;
+  const fill = ledColour(value);
+  const glow = selected ? `drop-shadow(0 0 5px ${fill})` : undefined;
+
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
+      <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
+      <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
+      <polygon
+        points={`${-bodyLen / 2},${-h} ${-bodyLen / 2},${h} ${bodyLen / 2},0`}
+        fill={fill} stroke={selected ? fill : "#00000066"}
+        strokeWidth={selected ? 1.5 : 1} className={styles.componentHit}
+      />
+      <line x1={bodyLen / 2} y1={-h} x2={bodyLen / 2} y2={h}
+        stroke={selected ? fill : "#555"} strokeWidth={selected ? 2 : 1.5} />
+      <line x1={bodyLen / 2 + 2} y1={-h + 1} x2={bodyLen / 2 + 5} y2={-h - 3}
+        stroke={fill} strokeWidth={1} opacity={0.8} />
+      <line x1={bodyLen / 2 + 3} y1={-1} x2={bodyLen / 2 + 7} y2={-4}
+        stroke={fill} strokeWidth={1} opacity={0.8} />
+    </g>
+  );
+}
+
+function LEDBody({ from, to, selected, value }: LEDBodyProps) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2;
+  const fill = ledColour(value);
+  const r = Math.min(Math.max((len - 10) / 2, 6), 9);
+  const glow = selected ? `drop-shadow(0 0 6px ${fill})` : undefined;
+  const clipId = `led-clip-${from.x}-${from.y}-${to.x}-${to.y}`;
+
+  return (
+    <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
+      <defs>
+        {/* clip removes rightmost 2.5px to form cathode flat spot */}
+        <clipPath id={clipId}>
+          <rect x={-r} y={-r} width={2 * r - 2.5} height={2 * r} />
+        </clipPath>
+      </defs>
+      {/* leads */}
+      <line x1={-len / 2} y1={0} x2={-r} y2={0} className={styles.componentLead} />
+      <line x1={r} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
+      {/* dome body — clipped to expose cathode flat */}
+      <circle
+        cx={0} cy={0} r={r}
+        fill={fill}
+        stroke={selected ? fill : "#00000055"}
+        strokeWidth={selected ? 1.5 : 1}
+        clipPath={`url(#${clipId})`}
+        className={styles.componentHit}
+      />
+      {/* cathode flat bar */}
+      <line
+        x1={r - 2.5} y1={-(r - 1)} x2={r - 2.5} y2={r - 1}
+        stroke={selected ? fill : "#444"} strokeWidth={selected ? 2 : 1.5}
+      />
+      {/* dome highlight — glassy sheen */}
+      <ellipse
+        cx={-r * 0.28} cy={-r * 0.32}
+        rx={r * 0.32} ry={r * 0.2}
+        fill="white" opacity={0.35}
+        clipPath={`url(#${clipId})`}
+      />
+    </g>
+  );
+}
+
 interface CapacitorBodyProps {
   from: { x: number; y: number };
   to: { x: number; y: number };
@@ -124,6 +227,7 @@ interface BoardCanvasProps {
   pendingHole: HoleRef | null;
   selectedWireId: string | null;
   selectedComponentId: string | null;
+  ledSymbolStyle: "physical" | "schematic";
   onHoleClick: (hole: HoleRef) => void;
   onWireSelect: (wireId: string) => void;
   onComponentSelect: (componentId: string) => void;
@@ -134,6 +238,7 @@ export function BoardCanvas({
   pendingHole,
   selectedWireId,
   selectedComponentId,
+  ledSymbolStyle,
   onHoleClick,
   onWireSelect,
   onComponentSelect
@@ -243,6 +348,10 @@ export function BoardCanvas({
             >
               {component.type === "resistor"
                 ? <ResistorBody from={from} to={to} selected={selected} />
+                : component.type === "led"
+                ? ledSymbolStyle === "schematic"
+                  ? <SchematicLEDBody from={from} to={to} selected={selected} value={component.value} />
+                  : <LEDBody from={from} to={to} selected={selected} value={component.value} />
                 : <CapacitorBody from={from} to={to} selected={selected} />}
               {/* Re-render intermediate hole markers so they show through the body */}
               {midHoles.map(h => {
