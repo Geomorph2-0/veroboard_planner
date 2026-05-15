@@ -20,6 +20,25 @@ function holeCenter(hole: HoleRef) {
   };
 }
 
+function intermediateHoles(comp: Component): HoleRef[] {
+  const { holeA, holeB } = comp;
+  const holes: HoleRef[] = [];
+  if (holeA.row === holeB.row) {
+    const minCol = Math.min(holeA.col, holeB.col);
+    const maxCol = Math.max(holeA.col, holeB.col);
+    for (let col = minCol + 1; col < maxCol; col++) {
+      holes.push({ row: holeA.row, col });
+    }
+  } else if (holeA.col === holeB.col) {
+    const minRow = Math.min(holeA.row, holeB.row);
+    const maxRow = Math.max(holeA.row, holeB.row);
+    for (let row = minRow + 1; row < maxRow; row++) {
+      holes.push({ row, col: holeA.col });
+    }
+  }
+  return holes;
+}
+
 function wireColor(wire: Wire, index: number): string {
   return wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length];
 }
@@ -187,33 +206,6 @@ export function BoardCanvas({
           );
         })}
 
-        {/* Components */}
-        {project.components.map((component: Component) => {
-          const from = holeCenter(component.holeA);
-          const to = holeCenter(component.holeB);
-          const selected = component.id === selectedComponentId;
-          return (
-            <g
-              key={component.id}
-              className={styles.componentHit}
-              data-testid={`component-${component.id}`}
-              onClick={(e) => { e.stopPropagation(); onComponentSelect(component.id); }}
-            >
-              {component.type === "resistor"
-                ? <ResistorBody from={from} to={to} selected={selected} />
-                : <CapacitorBody from={from} to={to} selected={selected} />}
-              <text
-                x={(from.x + to.x) / 2}
-                y={Math.min(from.y, to.y) - 10}
-                className={styles.componentLabel}
-                textAnchor="middle"
-              >
-                {component.label}
-              </text>
-            </g>
-          );
-        })}
-
         {/* Copper pads + holes */}
         {Array.from({ length: rows }, (_, row) =>
           Array.from({ length: cols }, (_, col) => {
@@ -235,6 +227,44 @@ export function BoardCanvas({
             );
           })
         )}
+
+        {/* Components (above holes) */}
+        {project.components.map((component: Component) => {
+          const from = holeCenter(component.holeA);
+          const to = holeCenter(component.holeB);
+          const selected = component.id === selectedComponentId;
+          const midHoles = intermediateHoles(component);
+          return (
+            <g
+              key={component.id}
+              className={styles.componentHit}
+              data-testid={`component-${component.id}`}
+              onClick={(e) => { e.stopPropagation(); onComponentSelect(component.id); }}
+            >
+              {component.type === "resistor"
+                ? <ResistorBody from={from} to={to} selected={selected} />
+                : <CapacitorBody from={from} to={to} selected={selected} />}
+              {/* Re-render intermediate hole markers so they show through the body */}
+              {midHoles.map(h => {
+                const { x, y } = holeCenter(h);
+                return (
+                  <g key={`mid-${h.row}-${h.col}`}>
+                    <circle cx={x} cy={y} r={5} fill="none" stroke="#c8882a" strokeWidth={1.2} />
+                    <circle cx={x} cy={y} r={3} fill="#1c0e04" />
+                  </g>
+                );
+              })}
+              <text
+                x={(from.x + to.x) / 2}
+                y={Math.min(from.y, to.y) - 10}
+                className={styles.componentLabel}
+                textAnchor="middle"
+              >
+                {component.label}
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
