@@ -26,24 +26,6 @@ function holeCenter(hole: HoleRef) {
   };
 }
 
-function intermediateHoles(comp: Component): HoleRef[] {
-  const { holeA, holeB } = comp;
-  const holes: HoleRef[] = [];
-  if (holeA.row === holeB.row) {
-    const minCol = Math.min(holeA.col, holeB.col);
-    const maxCol = Math.max(holeA.col, holeB.col);
-    for (let col = minCol + 1; col < maxCol; col++) {
-      holes.push({ row: holeA.row, col });
-    }
-  } else if (holeA.col === holeB.col) {
-    const minRow = Math.min(holeA.row, holeB.row);
-    const maxRow = Math.max(holeA.row, holeB.row);
-    for (let row = minRow + 1; row < maxRow; row++) {
-      holes.push({ row, col: holeA.col });
-    }
-  }
-  return holes;
-}
 
 function wireColor(wire: Wire, index: number): string {
   return wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length];
@@ -84,6 +66,7 @@ function ResistorBody({ from, to, selected }: ResistorBodyProps) {
         width={bodyLen}
         height={10}
         rx={3}
+        fillOpacity={0.85}
         className={selected ? `${styles.resistorBody} ${styles.selected}` : styles.resistorBody}
       />
       <line x1={-bodyLen / 3} y1={-5} x2={-bodyLen / 3} y2={5} className={styles.colorBand} style={{ stroke: "#c0392b" }} />
@@ -131,7 +114,7 @@ function SchematicLEDBody({ from, to, selected, value }: LEDBodyProps) {
       <polygon
         points={`${-bodyLen / 2},${-h} ${-bodyLen / 2},${h} ${bodyLen / 2},0`}
         fill={fill} stroke={selected ? fill : "#00000066"}
-        strokeWidth={selected ? 1.5 : 1} className={styles.componentHit}
+        strokeWidth={selected ? 1.5 : 1} fillOpacity={0.85} className={styles.componentHit}
       />
       <line x1={bodyLen / 2} y1={-h} x2={bodyLen / 2} y2={h}
         stroke={selected ? fill : "#555"} strokeWidth={selected ? 2 : 1.5} />
@@ -172,6 +155,7 @@ function LEDBody({ from, to, selected, value }: LEDBodyProps) {
         fill={fill}
         stroke={selected ? fill : "#00000055"}
         strokeWidth={selected ? 1.5 : 1}
+        fillOpacity={0.85}
         clipPath={`url(#${clipId})`}
         className={styles.componentHit}
       />
@@ -216,6 +200,7 @@ function CapacitorBody({ from, to, selected }: CapacitorBodyProps) {
         width={bodyLen}
         height={12}
         rx={6}
+        fillOpacity={0.85}
         className={selected ? `${styles.capacitorBody} ${styles.selected}` : styles.capacitorBody}
       />
       <line x1={bodyLen / 2 - 4} y1={-6} x2={bodyLen / 2 - 4} y2={6} className={styles.capacitorStripe} />
@@ -247,7 +232,7 @@ function DiodeBody({ from, to, selected }: TwoHoleBodyProps) {
       <rect
         x={-bodyLen / 2} y={-4} width={bodyLen} height={8} rx={2}
         fill="#2a2a2a" stroke={selected ? "#60a5fa" : "#555"} strokeWidth={selected ? 1.5 : 1}
-        className={styles.componentHit}
+        fillOpacity={0.85} className={styles.componentHit}
       />
       {/* cathode band */}
       <line x1={bodyLen / 2 - 3} y1={-4} x2={bodyLen / 2 - 3} y2={4}
@@ -278,7 +263,7 @@ function InductorBody({ from, to, selected }: TwoHoleBodyProps) {
       <rect
         x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={3}
         fill="#7a3010" stroke={selected ? "#fbbf24" : "#5a2008"} strokeWidth={selected ? 1.5 : 1}
-        className={styles.componentHit}
+        fillOpacity={0.85} className={styles.componentHit}
       />
       {/* coil humps */}
       {[h1, h2, h3].map((hx, i) => (
@@ -308,7 +293,7 @@ function CrystalBody({ from, to, selected }: TwoHoleBodyProps) {
       <rect
         x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={2}
         fill="#c0c0c0" stroke={selected ? "#e2e8f0" : "#888"} strokeWidth={selected ? 1.5 : 1}
-        className={styles.componentHit}
+        fillOpacity={0.85} className={styles.componentHit}
       />
       {/* centre seam line */}
       <line x1={-bodyLen / 2 + 2} y1={0} x2={bodyLen / 2 - 2} y2={0}
@@ -515,9 +500,6 @@ export function BoardCanvas({
           const from = holeCenter(component.holeA);
           const to = holeCenter(component.holeB);
           const selected = component.id === selectedComponentId;
-          const midHoles = (component.type === "ic" || component.type === "connector")
-            ? []
-            : intermediateHoles(component);
           return (
             <g
               key={component.id}
@@ -544,16 +526,6 @@ export function BoardCanvas({
                   ? <SchematicLEDBody from={from} to={to} selected={selected} value={component.value} />
                   : <LEDBody from={from} to={to} selected={selected} value={component.value} />
                 : <CapacitorBody from={from} to={to} selected={selected} />}
-              {/* Re-render intermediate hole markers so they show through the body */}
-              {midHoles.map(h => {
-                const { x, y } = holeCenter(h);
-                return (
-                  <g key={`mid-${h.row}-${h.col}`}>
-                    <circle cx={x} cy={y} r={5} fill="none" stroke="#c8882a" strokeWidth={1.2} />
-                    <circle cx={x} cy={y} r={3} fill="#1c0e04" />
-                  </g>
-                );
-              })}
               <text
                 x={(from.x + to.x) / 2}
                 y={Math.min(from.y, to.y) - 10}
