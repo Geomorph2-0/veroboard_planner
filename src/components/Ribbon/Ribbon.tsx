@@ -45,6 +45,7 @@ interface RibbonProps {
   onLoadProject: (file: File) => void;
   onNewProject: () => void;
   onToggleTheme: () => void;
+  canPrint: boolean;
 }
 
 function Divider() {
@@ -160,11 +161,12 @@ function WireBtn({ active, wireColour, onSelect, onColourChange }: {
   );
 }
 
-function FileMenuBtn({ onNew, onOpen, onSave, onPrint }: {
+function FileMenuBtn({ onNew, onOpen, onSave, onPrint, canPrint }: {
   onNew: () => void;
   onOpen: () => void;
   onSave: () => void;
   onPrint: () => void;
+  canPrint: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -192,10 +194,10 @@ function FileMenuBtn({ onNew, onOpen, onSave, onPrint }: {
   const close = () => { setOpen(false); setPos(null); };
 
   const items = [
-    { icon: "🗋", label: "New",   action: () => { onNew();   close(); } },
-    { icon: "📂", label: "Open",  action: () => { onOpen();  close(); } },
-    { icon: "💾", label: "Save",  action: () => { onSave();  close(); } },
-    { icon: "🖨", label: "Print", action: () => { onPrint(); close(); } },
+    { icon: "🗋", label: "New",   action: () => { onNew();   close(); }, disabled: false },
+    { icon: "📂", label: "Open",  action: () => { onOpen();  close(); }, disabled: false },
+    { icon: "💾", label: "Save",  action: () => { onSave();  close(); }, disabled: false },
+    { icon: "🖨", label: "Print", action: () => { onPrint(); close(); }, disabled: !canPrint },
   ];
 
   return (
@@ -214,8 +216,14 @@ function FileMenuBtn({ onNew, onOpen, onSave, onPrint }: {
           className={styles.fileMenu}
           style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
         >
-          {items.map(({ icon, label, action }) => (
-            <button key={label} type="button" className={styles.fileMenuItem} onClick={action}>
+          {items.map(({ icon, label, action, disabled }) => (
+            <button
+              key={label}
+              type="button"
+              className={styles.fileMenuItem}
+              onClick={disabled ? undefined : action}
+              style={disabled ? { opacity: 0.38, cursor: "not-allowed" } : undefined}
+            >
               <span className={styles.fileMenuIcon}>{icon}</span>
               {label}
             </button>
@@ -325,6 +333,7 @@ export function Ribbon({
   onLoadProject,
   onNewProject,
   onToggleTheme,
+  canPrint,
   ledSymbolStyle,
   onToggleLedSymbolStyle,
   wireColour,
@@ -389,6 +398,7 @@ export function Ribbon({
           onOpen={() => fileInputRef.current?.click()}
           onSave={onSaveProject}
           onPrint={() => window.print()}
+          canPrint={canPrint}
         />
         {tabs.map((tab) => (
           <button

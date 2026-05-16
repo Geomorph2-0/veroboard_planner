@@ -30,6 +30,7 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [ledSymbolStyle, setLedSymbolStyle] = useState<"physical" | "schematic">("physical");
   const [pendingPlacement, setPendingPlacement] = useState<{ holeA: HoleRef; holeB: HoleRef; type: ComponentType } | null>(null);
+  const [showNewConfirm, setShowNewConfirm] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -123,8 +124,15 @@ export default function App() {
         onRedo={store.redo}
         onSaveProject={store.saveProject}
         onLoadProject={(file) => { void store.loadProject(file); }}
-        onNewProject={store.newProject}
+        onNewProject={() => {
+          if (store.project.board !== null) {
+            setShowNewConfirm(true);
+          } else {
+            store.newProject();
+          }
+        }}
         onToggleTheme={toggleTheme}
+        canPrint={store.project.board !== null}
         ledSymbolStyle={ledSymbolStyle}
         onToggleLedSymbolStyle={() => setLedSymbolStyle(s => s === "physical" ? "schematic" : "physical")}
         wireColour={store.wireColour}
@@ -183,6 +191,31 @@ export default function App() {
           }}
           onCancel={() => setPendingPlacement(null)}
         />
+      )}
+
+      {showNewConfirm && (
+        <div className={styles.confirmOverlay} onClick={() => setShowNewConfirm(false)}>
+          <div className={styles.confirmCard} onClick={e => e.stopPropagation()}>
+            <div className={styles.confirmTitle}>Start a new project?</div>
+            <div className={styles.confirmMsg}>
+              Save the current project first, or discard unsaved changes.
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmSave} onClick={() => {
+                store.saveProject();
+                store.newProject();
+                setShowNewConfirm(false);
+              }}>Save &amp; New</button>
+              <button className={styles.confirmDiscard} onClick={() => {
+                store.newProject();
+                setShowNewConfirm(false);
+              }}>Discard</button>
+              <button className={styles.confirmCancel} onClick={() => setShowNewConfirm(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

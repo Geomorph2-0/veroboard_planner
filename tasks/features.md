@@ -60,3 +60,7 @@ Updated before every commit. Present to user for verification before pushing.
 - [ ] Project manager — multiple named projects in-browser
 - [ ] Zoom and pan on large boards
 - [ ] Mobile / touch support
+
+### v0.5.4 — File menu UX
+- [x] Print disabled (greyed out) when no board is open
+- [x] New project prompts to save first if a board is open (Save & New / Discard / Cancel)

@@ -101,6 +101,14 @@ src/components/   React UI. Reads from store, calls store actions.
 5. **Document Results**: Add review section to `tasks/todo.md`
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 
+### Tasks folder rules (mandatory)
+- **At session start**: Read `tasks/todo.md`, `tasks/lessons.md`, and `tasks/features.md` before doing any work
+- **Before implementing**: Add the planned work as checkable items in `tasks/todo.md`
+- **During implementation**: Mark each item `[x]` as soon as it is done — never batch
+- **After any user correction**: Immediately update `tasks/lessons.md` with the rule and why
+- **Before every commit**: Update `tasks/features.md` with any shipped features under the correct version section
+- **At session end**: Ensure `tasks/todo.md` reflects the true state of all items and `tasks/features.md` is current
+
 ## Git Conventions
 
 - **No co-author credits**: Never add `Co-Authored-By:` or any Claude/AI attribution lines to commit messages in this repo.
