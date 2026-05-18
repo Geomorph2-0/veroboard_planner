@@ -1,13 +1,18 @@
 .wrap {
   overflow: auto;
   border-radius: 6px;
-  background: #1a1209;
-  padding: 10px;
+  background: #111;
+  padding: 0;
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .svg {
   display: block;
+}
+
+/* Off-board workspace area */
+.workspace {
+  fill: #141414;
 }
 
 /* Board surface — warm orange-brown phenolic, matching real veroboard */

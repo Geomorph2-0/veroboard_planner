@@ -2,13 +2,15 @@ import { create } from "zustand";
 import { validateBoardDimensions } from "../editor/validation";
 import { removeProjectComponent, placeProjectComponent } from "../model/component";
 import { resizeBoard } from "../model/board";
-import { connectProjectHoles, disconnectProjectWire } from "../model/wire";
+import { connectProjectHoles, connectTerminalToHole, disconnectProjectWire } from "../model/wire";
+import { moveFreeComponent, placeFreeComponent, removeFreeComponent } from "../model/freeComponent";
 import {
   BoardType,
   Component,
   ComponentType,
   HoleRef,
   ProjectFile,
+  TerminalRef,
   createBoard,
   createProjectWithoutBoard,
   toUtcTimestamp
@@ -60,6 +62,12 @@ export interface PlannerState {
   disconnectWire: (wireId: string) => boolean;
   removeComponent: (componentId: string) => boolean;
   updateComponent: (id: string, fields: Partial<Pick<Component, "label" | "value" | "tolerance" | "voltageRating">>) => void;
+  dropBattery: (x: number, y: number) => void;
+  moveBattery: (id: string, x: number, y: number) => void;
+  removeBattery: (id: string) => boolean;
+  connectTerminal: (terminal: TerminalRef, hole: HoleRef) => boolean;
+  selectedFreeComponentId: string | null;
+  setSelectedFreeComponentId: (id: string | null) => void;
   undo: () => void;
   redo: () => void;
   newProject: () => void;
@@ -79,6 +87,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   pendingHole: null,
   selectedWireId: null,
   selectedComponentId: null,
+  selectedFreeComponentId: null,
   statusMessage: "Add a board to get started.",
   componentDraft: defaultDraft,
   wireColour: null,
@@ -91,6 +100,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       pendingHole: null,
       selectedWireId: null,
       selectedComponentId: null,
+      selectedFreeComponentId: null,
       statusMessage: `Switched to ${tool} mode.`
     });
   },
@@ -223,6 +233,36 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       updatedAt: toUtcTimestamp()
     };
     set({ past: pushHistory(past, project), future: [], project: updated });
+  },
+
+  setSelectedFreeComponentId: (id) => set({ selectedFreeComponentId: id }),
+
+  dropBattery: (x, y) => {
+    const { project, past } = get();
+    const { project: newProject } = placeFreeComponent(project, "battery", x, y);
+    set({ past: pushHistory(past, project), future: [], project: newProject, statusMessage: "Battery placed." });
+  },
+
+  moveBattery: (id, x, y) => {
+    const { project } = get();
+    set({ project: moveFreeComponent(project, id, x, y) });
+  },
+
+  removeBattery: (id) => {
+    const { project, past } = get();
+    const result = removeFreeComponent(project, id);
+    if (result.error) { set({ statusMessage: result.error }); return false; }
+    set({ past: pushHistory(past, project), future: [], project: result.project, selectedFreeComponentId: null, statusMessage: "Battery removed." });
+    return true;
+  },
+
+  connectTerminal: (terminal, hole) => {
+    const { project, past } = get();
+    const colour = get().wireColour ?? undefined;
+    const result = connectTerminalToHole(project, terminal, hole, colour);
+    if (result.error) { set({ statusMessage: result.error }); return false; }
+    set({ past: pushHistory(past, project), future: [], project: result.project, statusMessage: "Wire connected." });
+    return true;
   },
 
   undo: () => {

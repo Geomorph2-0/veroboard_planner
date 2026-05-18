@@ -5,7 +5,7 @@ import { ComponentPopup } from "./components/ComponentPopup/ComponentPopup";
 import { Inspector } from "./components/Inspector/Inspector";
 import { Ribbon } from "./components/Ribbon/Ribbon";
 import { holeRefEquals } from "./model/board";
-import { ComponentType, HoleRef } from "./model/types";
+import { ComponentType, HoleRef, TerminalRef } from "./model/types";
 import { usePlannerStore } from "./state/store";
 import styles from "./App.module.css";
 
@@ -30,6 +30,7 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const [ledSymbolStyle, setLedSymbolStyle] = useState<"physical" | "schematic">("physical");
   const [pendingPlacement, setPendingPlacement] = useState<{ holeA: HoleRef; holeB: HoleRef; type: ComponentType } | null>(null);
+  const [pendingTerminalRef, setPendingTerminalRef] = useState<TerminalRef | null>(null);
   const [showNewConfirm, setShowNewConfirm] = useState(false);
 
   useEffect(() => {
@@ -44,9 +45,10 @@ export default function App() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        const { selectedWireId, selectedComponentId, disconnectWire, removeComponent } = usePlannerStore.getState();
+        const { selectedWireId, selectedComponentId, selectedFreeComponentId, disconnectWire, removeComponent, removeBattery } = usePlannerStore.getState();
         if (selectedWireId) disconnectWire(selectedWireId);
         else if (selectedComponentId) removeComponent(selectedComponentId);
+        else if (selectedFreeComponentId) removeBattery(selectedFreeComponentId);
         return;
       }
 
@@ -72,6 +74,15 @@ export default function App() {
   const handleHoleClick = (hole: HoleRef) => {
     store.setSelectedWireId(null);
     store.setSelectedComponentId(null);
+    store.setSelectedFreeComponentId(null);
+
+    // If a battery terminal is pending, connect it to this hole
+    if (pendingTerminalRef) {
+      store.connectTerminal(pendingTerminalRef, hole);
+      setPendingTerminalRef(null);
+      store.setPendingHole(null);
+      return;
+    }
 
     if (!store.pendingHole) {
       store.setPendingHole(hole);
@@ -94,6 +105,20 @@ export default function App() {
       setPendingPlacement({ holeA, holeB: hole, type: store.tool as ComponentType });
       store.setStatusMessage("Fill in component details.");
     }
+  };
+
+  const handleTerminalClick = (componentId: string, terminal: "pos" | "neg") => {
+    if (store.tool !== "wire") return;
+    store.setSelectedWireId(null);
+    store.setSelectedComponentId(null);
+    if (pendingTerminalRef?.componentId === componentId && pendingTerminalRef?.terminal === terminal) {
+      setPendingTerminalRef(null);
+      store.setStatusMessage("Terminal deselected.");
+      return;
+    }
+    setPendingTerminalRef({ kind: "terminal", componentId, terminal });
+    store.setPendingHole(null);
+    store.setStatusMessage(`${terminal === "pos" ? "Positive" : "Negative"} terminal selected. Click a board hole to connect.`);
   };
 
   return (
@@ -148,20 +173,33 @@ export default function App() {
             <BoardCanvas
               project={store.project}
               pendingHole={store.pendingHole}
+              pendingTerminalRef={pendingTerminalRef}
               selectedWireId={store.selectedWireId}
               selectedComponentId={store.selectedComponentId}
+              selectedFreeComponentId={store.selectedFreeComponentId}
               ledSymbolStyle={ledSymbolStyle}
               onHoleClick={handleHoleClick}
               onWireSelect={(id) => {
                 store.setSelectedWireId(id);
                 store.setSelectedComponentId(null);
+                store.setSelectedFreeComponentId(null);
                 store.setStatusMessage("Wire selected. Press Delete to remove.");
               }}
               onComponentSelect={(id) => {
                 store.setSelectedComponentId(id);
                 store.setSelectedWireId(null);
+                store.setSelectedFreeComponentId(null);
                 store.setStatusMessage("Component selected. Press Delete to remove.");
               }}
+              onFreeComponentSelect={(id) => {
+                store.setSelectedFreeComponentId(id);
+                store.setSelectedComponentId(null);
+                store.setSelectedWireId(null);
+                store.setStatusMessage("Battery selected. Press Delete to remove.");
+              }}
+              onBatteryDrop={(x, y) => store.dropBattery(x, y)}
+              onTerminalClick={handleTerminalClick}
+              onBatteryMove={(id, x, y) => store.moveBattery(id, x, y)}
             />
           )}
         </main>

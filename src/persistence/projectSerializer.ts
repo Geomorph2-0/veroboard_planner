@@ -1,4 +1,4 @@
-import { BoardType, ComponentType, HoleRef, PROJECT_FILE_VERSION, ProjectFile } from "../model/types";
+import { BoardType, ComponentType, FreeComponent, HoleRef, PROJECT_FILE_VERSION, ProjectFile, TerminalRef, WireEndpoint } from "../model/types";
 
 function assertObject(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -28,12 +28,22 @@ function parseHoleRef(value: unknown, label: string): HoleRef {
   };
 }
 
-function parseComponentType(value: unknown): ComponentType {
-  if (value === "resistor" || value === "capacitor") {
-    return value;
+function parseWireEndpoint(value: unknown, label: string): WireEndpoint {
+  assertObject(value, label);
+  if (value.kind === "terminal") {
+    assertString(value.componentId, `${label}.componentId`);
+    if (value.terminal !== "pos" && value.terminal !== "neg") {
+      throw new Error(`${label}.terminal must be "pos" or "neg".`);
+    }
+    return { kind: "terminal", componentId: String(value.componentId), terminal: value.terminal as "pos" | "neg" } as TerminalRef;
   }
+  return parseHoleRef(value, label);
+}
 
-  throw new Error("Component type must be 'resistor' or 'capacitor'.");
+function parseComponentType(value: unknown): ComponentType {
+  const valid: ComponentType[] = ["resistor", "capacitor", "diode", "inductor", "crystal", "ic", "connector", "led"];
+  if (valid.includes(value as ComponentType)) return value as ComponentType;
+  throw new Error(`Unknown component type: ${String(value)}`);
 }
 
 export function serializeProject(project: ProjectFile): string {
@@ -71,19 +81,14 @@ export function deserializeProject(rawText: string): ProjectFile {
   const wires = parsed.wires.map((wire, index) => {
     assertObject(wire, `wires[${index}]`);
     assertString(wire.id, `wires[${index}].id`);
-    const from = parseHoleRef(wire.from, `wires[${index}].from`);
-    const to = parseHoleRef(wire.to, `wires[${index}].to`);
+    const from = parseWireEndpoint(wire.from, `wires[${index}].from`);
+    const to = parseWireEndpoint(wire.to, `wires[${index}].to`);
 
     if (wire.color !== undefined) {
       assertString(wire.color, `wires[${index}].color`);
     }
 
-    return {
-      id: wire.id,
-      from,
-      to,
-      color: wire.color
-    };
+    return { id: wire.id as string, from, to, color: wire.color as string | undefined };
   });
 
   const components = parsed.components.map((component, index) => {
@@ -101,26 +106,46 @@ export function deserializeProject(rawText: string): ProjectFile {
     }
 
     return {
-      id: component.id,
+      id: component.id as string,
       type: parseComponentType(component.type),
-      label: component.label,
-      value: component.value,
-      tolerance: component.tolerance,
-      voltageRating: component.voltageRating,
+      label: component.label as string,
+      value: component.value as string,
+      tolerance: component.tolerance as string | undefined,
+      voltageRating: component.voltageRating as string | undefined,
       holeA: parseHoleRef(component.holeA, `components[${index}].holeA`),
       holeB: parseHoleRef(component.holeB, `components[${index}].holeB`)
     };
   });
+
+  const freeComponents: FreeComponent[] = Array.isArray(parsed.freeComponents)
+    ? parsed.freeComponents.map((fc, index) => {
+        assertObject(fc, `freeComponents[${index}]`);
+        assertString(fc.id, `freeComponents[${index}].id`);
+        assertString(fc.label, `freeComponents[${index}].label`);
+        assertString(fc.value, `freeComponents[${index}].value`);
+        assertNumber(fc.x, `freeComponents[${index}].x`);
+        assertNumber(fc.y, `freeComponents[${index}].y`);
+        return {
+          id: fc.id as string,
+          type: "battery" as const,
+          label: fc.label as string,
+          value: fc.value as string,
+          tolerance: typeof fc.tolerance === "string" ? fc.tolerance : undefined,
+          x: Number(fc.x),
+          y: Number(fc.y)
+        };
+      })
+    : [];
 
   const boardType: BoardType =
     boardObj?.type === "perfboard" ? "perfboard" : "stripboard";
 
   return {
     version: parsed.version || PROJECT_FILE_VERSION,
-    projectId: parsed.projectId,
-    name: parsed.name,
-    createdAt: parsed.createdAt,
-    updatedAt: parsed.updatedAt,
+    projectId: parsed.projectId as string,
+    name: parsed.name as string,
+    createdAt: parsed.createdAt as string,
+    updatedAt: parsed.updatedAt as string,
     board: hasBoard && boardObj
       ? {
           boardId: String(boardObj.boardId),
@@ -132,6 +157,7 @@ export function deserializeProject(rawText: string): ProjectFile {
         }
       : null,
     wires,
-    components
+    components,
+    freeComponents
   };
 }

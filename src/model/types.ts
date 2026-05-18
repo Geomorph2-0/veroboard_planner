@@ -6,6 +6,28 @@ export interface HoleRef {
   col: number;
 }
 
+export interface TerminalRef {
+  kind: "terminal";
+  componentId: string;
+  terminal: "pos" | "neg";
+}
+
+export type WireEndpoint = HoleRef | TerminalRef;
+
+export function isTerminalRef(ep: WireEndpoint): ep is TerminalRef {
+  return "kind" in ep && ep.kind === "terminal";
+}
+
+export interface FreeComponent {
+  id: string;
+  type: "battery";
+  label: string;
+  value: string;
+  tolerance?: string;
+  x: number;
+  y: number;
+}
+
 export interface Board {
   boardId: string;
   rows: number;
@@ -16,8 +38,8 @@ export interface Board {
 
 export interface Wire {
   id: string;
-  from: HoleRef;
-  to: HoleRef;
+  from: WireEndpoint;
+  to: WireEndpoint;
   color?: string;
 }
 
@@ -41,6 +63,7 @@ export interface ProjectFile {
   board: Board | null;
   components: Component[];
   wires: Wire[];
+  freeComponents: FreeComponent[];
 }
 
 export interface MutationResult {
@@ -82,7 +105,8 @@ export function createProjectWithoutBoard(): ProjectFile {
     updatedAt: createdAt,
     board: null,
     components: [],
-    wires: []
+    wires: [],
+    freeComponents: []
   };
 }
 
@@ -96,6 +120,7 @@ export function createEmptyProject(rows: number = 14, cols: number = 24): Projec
     updatedAt: createdAt,
     board: createBoard("stripboard", rows, cols),
     components: [],
-    wires: []
+    wires: [],
+    freeComponents: []
   };
 }

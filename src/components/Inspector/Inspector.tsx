@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Component, HoleRef, ProjectFile } from "../../model/types";
+import { Component, HoleRef, ProjectFile, isTerminalRef } from "../../model/types";
 import styles from "./Inspector.module.css";
 
 interface InspectorProps {
@@ -122,8 +122,8 @@ export function Inspector({
                 <span className={styles.wireSwatch} style={{ background: selectedWire.color }} />
               </div>
             )}
-            <Row label="From" value={`R${selectedWire.from.row + 1} C${selectedWire.from.col + 1}`} />
-            <Row label="To" value={`R${selectedWire.to.row + 1} C${selectedWire.to.col + 1}`} />
+            <Row label="From" value={isTerminalRef(selectedWire.from) ? `${selectedWire.from.terminal === "pos" ? "+" : "−"} terminal` : `R${(selectedWire.from).row + 1} C${(selectedWire.from).col + 1}`} />
+            <Row label="To" value={isTerminalRef(selectedWire.to) ? `${selectedWire.to.terminal === "pos" ? "+" : "−"} terminal` : `R${(selectedWire.to).row + 1} C${(selectedWire.to).col + 1}`} />
           </>
         )}
         {selectedComponent && (

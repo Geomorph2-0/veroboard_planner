@@ -457,6 +457,22 @@ export function Ribbon({
               <ComponentsMenuBtn tool={tool} onToolChange={onToolChange} />
             </Group>
             <Divider />
+            <Group label="Power">
+              <button
+                type="button"
+                className={styles.btn}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("tool", "battery");
+                  e.dataTransfer.effectAllowed = "copy";
+                }}
+                title="Drag to place a 9V battery"
+              >
+                <span className={styles.btnIcon}>🔋</span>
+                <span className={styles.btnLabel}>Battery</span>
+              </button>
+            </Group>
+            <Divider />
             <Group label="Board">
               <RibbonBtn icon="≡" label="Stripboard" onClick={() => onBoardTypeChange("stripboard")} active={boardType === "stripboard"} disabled={!boardType} />
               <RibbonBtn icon="⊞" label="Perfboard" onClick={() => onBoardTypeChange("perfboard")} active={boardType === "perfboard"} disabled={!boardType} />

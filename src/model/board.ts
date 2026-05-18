@@ -1,4 +1,4 @@
-import { Board, HoleRef, ProjectFile, toUtcTimestamp } from "./types";
+import { Board, HoleRef, ProjectFile, isTerminalRef, toUtcTimestamp } from "./types";
 
 export const MIN_BOARD_DIMENSION = 1;
 
@@ -43,9 +43,11 @@ export function resizeBoard(project: ProjectFile, rows: number, cols: number): P
     cols: safeCols
   };
 
-  const nextWires = project.wires.filter(
-    (wire) => isHoleInBoard(nextBoard, wire.from) && isHoleInBoard(nextBoard, wire.to)
-  );
+  const nextWires = project.wires.filter((wire) => {
+    const fromOk = isTerminalRef(wire.from) || isHoleInBoard(nextBoard, wire.from);
+    const toOk = isTerminalRef(wire.to) || isHoleInBoard(nextBoard, wire.to);
+    return fromOk && toOk;
+  });
 
   const nextComponents = project.components.filter(
     (component) => isHoleInBoard(nextBoard, component.holeA) && isHoleInBoard(nextBoard, component.holeB)

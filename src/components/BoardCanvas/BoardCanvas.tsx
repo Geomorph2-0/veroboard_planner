@@ -1,4 +1,6 @@
-import { ProjectFile, HoleRef, Component, Wire } from "../../model/types";
+import { useRef, useState } from "react";
+import { ProjectFile, HoleRef, Component, Wire, FreeComponent, TerminalRef, WireEndpoint, isTerminalRef } from "../../model/types";
+import { BATTERY_HEIGHT, BATTERY_WIDTH, BATTERY_POS_TERM_W, BATTERY_POS_TERM_H, BATTERY_NEG_TERM_W, BATTERY_NEG_TERM_H, batteryNegTerminalPos, batteryPosTerminalPos } from "../../model/freeComponent";
 import styles from "./BoardCanvas.module.css";
 
 const SPACING = 28;
@@ -6,17 +8,18 @@ const PADDING = 28;
 const PAD_RADIUS = 6.5;
 const HOLE_RADIUS = 4.2;
 const STRIP_WIDTH = 2.5;
-const MAX_BODY_LEN = SPACING - 10; // body stays within one hole-spacing
+const MAX_BODY_LEN = SPACING - 10;
+const CANVAS_MARGIN = 140;
 
 const WIRE_COLORS = [
-  "#e05c5c", "#ff8080", "#c0392b",           // reds
-  "#4a9eff", "#38bdf8", "#1d6fa5",           // blues
-  "#4caf50", "#a3e635", "#2e7d32",           // greens
-  "#ffb347", "#fb923c", "#e67e22",           // oranges
-  "#c084fc", "#9b59b6", "#e91e8c",           // purples/pink
-  "#ffee58", "#f9a825",                       // yellows
-  "#ffffff", "#b0b0b0", "#555555",           // whites/greys
-  "#e26d1a",                                  // default warm orange
+  "#e05c5c", "#ff8080", "#c0392b",
+  "#4a9eff", "#38bdf8", "#1d6fa5",
+  "#4caf50", "#a3e635", "#2e7d32",
+  "#ffb347", "#fb923c", "#e67e22",
+  "#c084fc", "#9b59b6", "#e91e8c",
+  "#ffee58", "#f9a825",
+  "#ffffff", "#b0b0b0", "#555555",
+  "#e26d1a",
 ];
 
 function holeCenter(hole: HoleRef) {
@@ -26,6 +29,14 @@ function holeCenter(hole: HoleRef) {
   };
 }
 
+function wireEndpointPos(endpoint: WireEndpoint, freeComponents: FreeComponent[]): { x: number; y: number } {
+  if (isTerminalRef(endpoint)) {
+    const fc = freeComponents.find((c) => c.id === endpoint.componentId);
+    if (!fc) return { x: 0, y: 0 };
+    return endpoint.terminal === "pos" ? batteryPosTerminalPos(fc) : batteryNegTerminalPos(fc);
+  }
+  return holeCenter(endpoint);
+}
 
 function wireColor(wire: Wire, index: number): string {
   return wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length];
@@ -60,15 +71,8 @@ function ResistorBody({ from, to, selected }: ResistorBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <rect
-        x={-bodyLen / 2}
-        y={-5}
-        width={bodyLen}
-        height={10}
-        rx={3}
-        fillOpacity={0.85}
-        className={selected ? `${styles.resistorBody} ${styles.selected}` : styles.resistorBody}
-      />
+      <rect x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={3}
+        fillOpacity={0.85} className={selected ? `${styles.resistorBody} ${styles.selected}` : styles.resistorBody} />
       <line x1={-bodyLen / 3} y1={-5} x2={-bodyLen / 3} y2={5} className={styles.colorBand} style={{ stroke: "#c0392b" }} />
       <line x1={-bodyLen / 9} y1={-5} x2={-bodyLen / 9} y2={5} className={styles.colorBand} style={{ stroke: "#e67e22" }} />
       <line x1={bodyLen / 9} y1={-5} x2={bodyLen / 9} y2={5} className={styles.colorBand} style={{ stroke: "#8e44ad" }} />
@@ -111,11 +115,9 @@ function SchematicLEDBody({ from, to, selected, value }: LEDBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <polygon
-        points={`${-bodyLen / 2},${-h} ${-bodyLen / 2},${h} ${bodyLen / 2},0`}
+      <polygon points={`${-bodyLen / 2},${-h} ${-bodyLen / 2},${h} ${bodyLen / 2},0`}
         fill={fill} stroke={selected ? fill : "#00000066"}
-        strokeWidth={selected ? 1.5 : 1} fillOpacity={0.85} className={styles.componentHit}
-      />
+        strokeWidth={selected ? 1.5 : 1} fillOpacity={0.85} className={styles.componentHit} />
       <line x1={bodyLen / 2} y1={-h} x2={bodyLen / 2} y2={h}
         stroke={selected ? fill : "#555"} strokeWidth={selected ? 2 : 1.5} />
       <line x1={bodyLen / 2 + 2} y1={-h + 1} x2={bodyLen / 2 + 5} y2={-h - 3}
@@ -141,47 +143,30 @@ function LEDBody({ from, to, selected, value }: LEDBodyProps) {
   return (
     <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
       <defs>
-        {/* clip removes rightmost 2.5px to form cathode flat spot */}
         <clipPath id={clipId}>
           <rect x={-r} y={-r} width={2 * r - 2.5} height={2 * r} />
         </clipPath>
       </defs>
-      {/* leads */}
       <line x1={-len / 2} y1={0} x2={-r} y2={0} className={styles.componentLead} />
       <line x1={r} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      {/* dome body — clipped to expose cathode flat */}
-      <circle
-        cx={0} cy={0} r={r}
-        fill={fill}
-        stroke={selected ? fill : "#00000055"}
-        strokeWidth={selected ? 1.5 : 1}
-        fillOpacity={0.85}
-        clipPath={`url(#${clipId})`}
-        className={styles.componentHit}
-      />
-      {/* cathode flat bar */}
-      <line
-        x1={r - 2.5} y1={-(r - 1)} x2={r - 2.5} y2={r - 1}
-        stroke={selected ? fill : "#444"} strokeWidth={selected ? 2 : 1.5}
-      />
-      {/* dome highlight — glassy sheen */}
-      <ellipse
-        cx={-r * 0.28} cy={-r * 0.32}
-        rx={r * 0.32} ry={r * 0.2}
-        fill="white" opacity={0.35}
-        clipPath={`url(#${clipId})`}
-      />
+      <circle cx={0} cy={0} r={r} fill={fill}
+        stroke={selected ? fill : "#00000055"} strokeWidth={selected ? 1.5 : 1}
+        fillOpacity={0.85} clipPath={`url(#${clipId})`} className={styles.componentHit} />
+      <line x1={r - 2.5} y1={-(r - 1)} x2={r - 2.5} y2={r - 1}
+        stroke={selected ? fill : "#444"} strokeWidth={selected ? 2 : 1.5} />
+      <ellipse cx={-r * 0.28} cy={-r * 0.32} rx={r * 0.32} ry={r * 0.2}
+        fill="white" opacity={0.35} clipPath={`url(#${clipId})`} />
     </g>
   );
 }
 
-interface CapacitorBodyProps {
+interface TwoHoleBodyProps {
   from: { x: number; y: number };
   to: { x: number; y: number };
   selected: boolean;
 }
 
-function CapacitorBody({ from, to, selected }: CapacitorBodyProps) {
+function CapacitorBody({ from, to, selected }: TwoHoleBodyProps) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy);
@@ -194,25 +179,12 @@ function CapacitorBody({ from, to, selected }: CapacitorBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <rect
-        x={-bodyLen / 2}
-        y={-6}
-        width={bodyLen}
-        height={12}
-        rx={6}
-        fillOpacity={0.85}
-        className={selected ? `${styles.capacitorBody} ${styles.selected}` : styles.capacitorBody}
-      />
+      <rect x={-bodyLen / 2} y={-6} width={bodyLen} height={12} rx={6}
+        fillOpacity={0.85} className={selected ? `${styles.capacitorBody} ${styles.selected}` : styles.capacitorBody} />
       <line x1={bodyLen / 2 - 4} y1={-6} x2={bodyLen / 2 - 4} y2={6} className={styles.capacitorStripe} />
       <text x={-bodyLen / 2 + 3} y={2} fontSize={5} fill="#a0c4ff" fontFamily="monospace" pointerEvents="none">+</text>
     </g>
   );
-}
-
-interface TwoHoleBodyProps {
-  from: { x: number; y: number };
-  to: { x: number; y: number };
-  selected: boolean;
 }
 
 function DiodeBody({ from, to, selected }: TwoHoleBodyProps) {
@@ -229,12 +201,9 @@ function DiodeBody({ from, to, selected }: TwoHoleBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <rect
-        x={-bodyLen / 2} y={-4} width={bodyLen} height={8} rx={2}
+      <rect x={-bodyLen / 2} y={-4} width={bodyLen} height={8} rx={2}
         fill="#2a2a2a" stroke={selected ? "#60a5fa" : "#555"} strokeWidth={selected ? 1.5 : 1}
-        fillOpacity={0.85} className={styles.componentHit}
-      />
-      {/* cathode band */}
+        fillOpacity={0.85} className={styles.componentHit} />
       <line x1={bodyLen / 2 - 3} y1={-4} x2={bodyLen / 2 - 3} y2={4}
         stroke={selected ? "#60a5fa" : "#aaaaaa"} strokeWidth={2} />
     </g>
@@ -250,7 +219,6 @@ function InductorBody({ from, to, selected }: TwoHoleBodyProps) {
   const cy = (from.y + to.y) / 2;
   const bodyLen = Math.min(Math.max(len - 10, 12), MAX_BODY_LEN);
   const glow = selected ? "drop-shadow(0 0 4px #fbbf24)" : undefined;
-  // 3 humps above the body
   const humpR = bodyLen / 6;
   const h1 = -bodyLen / 3 + humpR;
   const h2 = 0;
@@ -260,17 +228,12 @@ function InductorBody({ from, to, selected }: TwoHoleBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <rect
-        x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={3}
+      <rect x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={3}
         fill="#7a3010" stroke={selected ? "#fbbf24" : "#5a2008"} strokeWidth={selected ? 1.5 : 1}
-        fillOpacity={0.85} className={styles.componentHit}
-      />
-      {/* coil humps */}
+        fillOpacity={0.85} className={styles.componentHit} />
       {[h1, h2, h3].map((hx, i) => (
-        <path key={i}
-          d={`M ${hx - humpR} 0 A ${humpR} ${humpR} 0 0 1 ${hx + humpR} 0`}
-          fill="none" stroke={selected ? "#fbbf24" : "#c07840"} strokeWidth={1.2}
-        />
+        <path key={i} d={`M ${hx - humpR} 0 A ${humpR} ${humpR} 0 0 1 ${hx + humpR} 0`}
+          fill="none" stroke={selected ? "#fbbf24" : "#c07840"} strokeWidth={1.2} />
       ))}
     </g>
   );
@@ -290,12 +253,9 @@ function CrystalBody({ from, to, selected }: TwoHoleBodyProps) {
     <g transform={`translate(${cx},${cy}) rotate(${angle})`} style={{ filter: glow }}>
       <line x1={-len / 2} y1={0} x2={-bodyLen / 2} y2={0} className={styles.componentLead} />
       <line x1={bodyLen / 2} y1={0} x2={len / 2} y2={0} className={styles.componentLead} />
-      <rect
-        x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={2}
+      <rect x={-bodyLen / 2} y={-5} width={bodyLen} height={10} rx={2}
         fill="#c0c0c0" stroke={selected ? "#e2e8f0" : "#888"} strokeWidth={selected ? 1.5 : 1}
-        fillOpacity={0.85} className={styles.componentHit}
-      />
-      {/* centre seam line */}
+        fillOpacity={0.85} className={styles.componentHit} />
       <line x1={-bodyLen / 2 + 2} y1={0} x2={bodyLen / 2 - 2} y2={0}
         stroke={selected ? "#e2e8f0" : "#999"} strokeWidth={0.8} opacity={0.7} />
     </g>
@@ -318,31 +278,21 @@ function ICBody({ from, to, selected }: TwoHoleBodyProps) {
   return (
     <g style={{ filter: glow }}>
       {pinYs.map((py, i) => (
-        <line key={`lp-${i}`} x1={left - 6} y1={py} x2={left} y2={py}
-          stroke={strokeCol} strokeWidth={1.5} />
+        <line key={`lp-${i}`} x1={left - 6} y1={py} x2={left} y2={py} stroke={strokeCol} strokeWidth={1.5} />
       ))}
       {pinYs.map((py, i) => (
-        <line key={`rp-${i}`} x1={right} y1={py} x2={right + 6} y2={py}
-          stroke={strokeCol} strokeWidth={1.5} />
+        <line key={`rp-${i}`} x1={right} y1={py} x2={right + 6} y2={py} stroke={strokeCol} strokeWidth={1.5} />
       ))}
-      <rect
-        x={left + bodyPad} y={top - bodyPad}
-        width={right - left - bodyPad * 2} height={bottom - top + bodyPad * 2}
-        rx={2} fill="#1a1a1a" stroke={strokeCol} strokeWidth={selected ? 1.5 : 1}
-        className={styles.componentHit}
-      />
-      <path
-        d={`M ${left + bodyPad + 1} ${top - bodyPad} a 4 4 0 0 1 8 0`}
-        fill="#111" stroke={strokeCol} strokeWidth={0.8}
-      />
+      <rect x={left + bodyPad} y={top - bodyPad} width={right - left - bodyPad * 2} height={bottom - top + bodyPad * 2}
+        rx={2} fill="#1a1a1a" stroke={strokeCol} strokeWidth={selected ? 1.5 : 1} className={styles.componentHit} />
+      <path d={`M ${left + bodyPad + 1} ${top - bodyPad} a 4 4 0 0 1 8 0`}
+        fill="#111" stroke={strokeCol} strokeWidth={0.8} />
       {pinYs.map((py, i) => (
-        <rect key={`ls-${i}`}
-          x={left + bodyPad - 3} y={py - 1.5} width={3} height={3}
+        <rect key={`ls-${i}`} x={left + bodyPad - 3} y={py - 1.5} width={3} height={3}
           fill={selected ? "#a78bfa" : "#555"} />
       ))}
       {pinYs.map((py, i) => (
-        <rect key={`rs-${i}`}
-          x={right - bodyPad} y={py - 1.5} width={3} height={3}
+        <rect key={`rs-${i}`} x={right - bodyPad} y={py - 1.5} width={3} height={3}
           fill={selected ? "#a78bfa" : "#555"} />
       ))}
     </g>
@@ -384,43 +334,244 @@ function ConnectorBody({ from, to, selected }: TwoHoleBodyProps) {
   );
 }
 
+interface BatteryBodyProps {
+  fc: FreeComponent;
+  selected: boolean;
+  pendingTerminal: "pos" | "neg" | null;
+  onSelect: () => void;
+  onTerminalClick: (terminal: "pos" | "neg") => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+}
+
+function BatteryBody({ fc, selected, pendingTerminal, onSelect, onTerminalClick, onMouseDown }: BatteryBodyProps) {
+  const W = BATTERY_WIDTH;
+  const H = BATTERY_HEIGHT;
+  const bx = fc.x - W / 2;
+  const by = fc.y - H / 2;
+  const splitH = H * 0.55;
+  const posPos = batteryPosTerminalPos(fc);
+  const negPos = batteryNegTerminalPos(fc);
+
+  return (
+    <g>
+      {/* Body — white lower section base */}
+      <rect x={bx} y={by} width={W} height={H} rx={4}
+        fill="#f0f0f0" stroke={selected ? "#60b4ff" : "#555"}
+        strokeWidth={selected ? 2 : 1}
+        onMouseDown={onMouseDown}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+        style={{ cursor: "move" }}
+        className={styles.componentHit}
+      />
+      {/* Blue upper section */}
+      <rect x={bx} y={by} width={W} height={splitH} rx={4}
+        fill="#1a5fb4"
+        onMouseDown={onMouseDown}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+        style={{ cursor: "move" }}
+      />
+      {/* Fix blue bottom corners overlapping white */}
+      <rect x={bx} y={by + splitH - 4} width={W} height={4} fill="#1a5fb4" />
+      {/* Divider */}
+      <line x1={bx} y1={by + splitH} x2={bx + W} y2={by + splitH}
+        stroke="#aaaaaa" strokeWidth={0.8} pointerEvents="none" />
+      {/* "HW" logo */}
+      <text x={fc.x} y={by + splitH * 0.28} textAnchor="middle" dominantBaseline="middle"
+        fontSize={8} fontWeight="bold" fill="white" pointerEvents="none" fontFamily="sans-serif">
+        HW
+      </text>
+      {/* "Hi-Watt" subtitle */}
+      <text x={fc.x} y={by + splitH * 0.52} textAnchor="middle" dominantBaseline="middle"
+        fontSize={4} fill="#c8e0ff" pointerEvents="none" fontFamily="sans-serif">
+        Hi-Watt
+      </text>
+      {/* Voltage label */}
+      <text x={fc.x} y={by + splitH + (H * 0.45) * 0.45} textAnchor="middle" dominantBaseline="middle"
+        fontSize={8} fontWeight="bold" fill="#1a1a1a" pointerEvents="none" fontFamily="sans-serif">
+        {fc.value}
+      </text>
+      {/* "GENERAL PURPOSE" tiny text */}
+      <text x={fc.x} y={by + splitH + (H * 0.45) * 0.78} textAnchor="middle" dominantBaseline="middle"
+        fontSize={3} fill="#555" pointerEvents="none" fontFamily="sans-serif" letterSpacing={0.3}>
+        GENERAL PURPOSE
+      </text>
+
+      {/* Positive terminal — narrow rectangle protruding above body */}
+      <rect
+        x={posPos.x - BATTERY_POS_TERM_W / 2}
+        y={posPos.y - BATTERY_POS_TERM_H / 2}
+        width={BATTERY_POS_TERM_W}
+        height={BATTERY_POS_TERM_H}
+        rx={1.5}
+        fill="#d0d0d0" stroke={pendingTerminal === "pos" ? "#44ff88" : "#888"}
+        strokeWidth={pendingTerminal === "pos" ? 2 : 0.8}
+        onClick={(e) => { e.stopPropagation(); onTerminalClick("pos"); }}
+        style={{ cursor: "crosshair" }}
+        className={styles.componentHit}
+      />
+      <text x={posPos.x} y={posPos.y} textAnchor="middle" dominantBaseline="middle"
+        fontSize={5} fontWeight="bold" fill="#333" pointerEvents="none">+</text>
+
+      {/* Negative terminal — wider rectangle protruding above body */}
+      <rect
+        x={negPos.x - BATTERY_NEG_TERM_W / 2}
+        y={negPos.y - BATTERY_NEG_TERM_H / 2}
+        width={BATTERY_NEG_TERM_W}
+        height={BATTERY_NEG_TERM_H}
+        rx={1.5}
+        fill="#d0d0d0" stroke={pendingTerminal === "neg" ? "#44ff88" : "#888"}
+        strokeWidth={pendingTerminal === "neg" ? 2 : 0.8}
+        onClick={(e) => { e.stopPropagation(); onTerminalClick("neg"); }}
+        style={{ cursor: "crosshair" }}
+        className={styles.componentHit}
+      />
+      <text x={negPos.x} y={negPos.y} textAnchor="middle" dominantBaseline="middle"
+        fontSize={5} fontWeight="bold" fill="#555" pointerEvents="none">−</text>
+
+      {/* Component label */}
+      <text x={fc.x} y={by - 8} textAnchor="middle" className={styles.componentLabel}>
+        {fc.label}
+      </text>
+
+      {/* Selection outline */}
+      {selected && (
+        <rect x={bx - 3} y={by - BATTERY_POS_TERM_H - 10} width={W + 6} height={H + BATTERY_POS_TERM_H + 13} rx={6}
+          fill="none" stroke="#60b4ff" strokeWidth={1.5} opacity={0.5} strokeDasharray="3 2"
+          pointerEvents="none" />
+      )}
+    </g>
+  );
+}
+
 interface BoardCanvasProps {
   project: ProjectFile;
   pendingHole: HoleRef | null;
+  pendingTerminalRef: TerminalRef | null;
   selectedWireId: string | null;
   selectedComponentId: string | null;
+  selectedFreeComponentId: string | null;
   ledSymbolStyle: "physical" | "schematic";
   onHoleClick: (hole: HoleRef) => void;
   onWireSelect: (wireId: string) => void;
   onComponentSelect: (componentId: string) => void;
+  onFreeComponentSelect: (id: string) => void;
+  onBatteryDrop: (x: number, y: number) => void;
+  onTerminalClick: (componentId: string, terminal: "pos" | "neg") => void;
+  onBatteryMove: (id: string, x: number, y: number) => void;
 }
 
 export function BoardCanvas({
   project,
   pendingHole,
+  pendingTerminalRef,
   selectedWireId,
   selectedComponentId,
+  selectedFreeComponentId,
   ledSymbolStyle,
   onHoleClick,
   onWireSelect,
-  onComponentSelect
+  onComponentSelect,
+  onFreeComponentSelect,
+  onBatteryDrop,
+  onTerminalClick,
+  onBatteryMove
 }: BoardCanvasProps) {
   if (!project.board) return null;
 
   const { rows, cols, type: boardType } = project.board;
   const width = PADDING * 2 + (cols - 1) * SPACING;
   const height = PADDING * 2 + (rows - 1) * SPACING;
+  const svgW = width + 2 * CANVAS_MARGIN;
+  const svgH = height + 2 * CANVAS_MARGIN;
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const [dragPos, setDragPos] = useState<{ id: string; x: number; y: number } | null>(null);
+
+  function clientToSvg(clientX: number, clientY: number): { x: number; y: number } {
+    const svg = svgRef.current;
+    if (!svg) return { x: clientX, y: clientY };
+    const rect = svg.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (svgW / rect.width) - CANVAS_MARGIN,
+      y: (clientY - rect.top) * (svgH / rect.height) - CANVAS_MARGIN
+    };
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const tool = e.dataTransfer.getData("tool");
+    if (tool !== "battery") return;
+    const { x, y } = clientToSvg(e.clientX, e.clientY);
+    onBatteryDrop(x, y);
+  }
+
+  function handleBatteryMouseDown(e: React.MouseEvent, fc: FreeComponent) {
+    e.stopPropagation();
+    dragRef.current = {
+      id: fc.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: fc.x,
+      origY: fc.y
+    };
+    setDragPos({ id: fc.id, x: fc.x, y: fc.y });
+  }
+
+  function handleSvgMouseMove(e: React.MouseEvent) {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = svgW / rect.width;
+    const scaleY = svgH / rect.height;
+    setDragPos({
+      id: dragRef.current.id,
+      x: dragRef.current.origX + dx * scaleX,
+      y: dragRef.current.origY + dy * scaleY
+    });
+  }
+
+  function handleSvgMouseUp() {
+    if (!dragRef.current || !dragPos) { dragRef.current = null; return; }
+    onBatteryMove(dragRef.current.id, dragPos.x, dragPos.y);
+    dragRef.current = null;
+    setDragPos(null);
+  }
+
+  // Merge live drag position into free components for rendering
+  const displayedFreeComponents = project.freeComponents.map((fc) =>
+    dragPos && dragPos.id === fc.id ? { ...fc, x: dragPos.x, y: dragPos.y } : fc
+  );
 
   return (
-    <div className={styles.wrap}>
+    <div
+      className={styles.wrap}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <svg
+        ref={svgRef}
         className={styles.svg}
-        viewBox={`0 0 ${width} ${height}`}
-        width={width}
-        height={height}
+        viewBox={`${-CANVAS_MARGIN} ${-CANVAS_MARGIN} ${svgW} ${svgH}`}
+        width={svgW}
+        height={svgH}
         role="img"
         aria-label="Veroboard canvas"
+        onMouseMove={handleSvgMouseMove}
+        onMouseUp={handleSvgMouseUp}
+        onMouseLeave={handleSvgMouseUp}
       >
+        {/* Off-board workspace */}
+        <rect x={-CANVAS_MARGIN} y={-CANVAS_MARGIN} width={svgW} height={svgH} className={styles.workspace} />
+
         {/* Board surface */}
         <rect x={0} y={0} width={width} height={height} rx={6} className={styles.boardSurface} />
         <rect x={0.75} y={0.75} width={width - 1.5} height={height - 1.5} rx={5.5} className={styles.boardEdge} />
@@ -431,12 +582,8 @@ export function BoardCanvas({
           const x1 = PADDING - PAD_RADIUS - 2;
           const x2 = PADDING + (cols - 1) * SPACING + PAD_RADIUS + 2;
           return (
-            <line
-              key={`strip-${row}`}
-              x1={x1} y1={y} x2={x2} y2={y}
-              className={styles.copperStrip}
-              strokeWidth={STRIP_WIDTH}
-            />
+            <line key={`strip-${row}`} x1={x1} y1={y} x2={x2} y2={y}
+              className={styles.copperStrip} strokeWidth={STRIP_WIDTH} />
           );
         })}
 
@@ -454,10 +601,10 @@ export function BoardCanvas({
           </text>
         ))}
 
-        {/* Wires (arcs above board) */}
+        {/* Wires */}
         {project.wires.map((wire, i) => {
-          const from = holeCenter(wire.from);
-          const to = holeCenter(wire.to);
+          const from = wireEndpointPos(wire.from, project.freeComponents);
+          const to = wireEndpointPos(wire.to, project.freeComponents);
           const color = wireColor(wire, i);
           const selected = wire.id === selectedWireId;
           return (
@@ -495,15 +642,13 @@ export function BoardCanvas({
           })
         )}
 
-        {/* Components (above holes) */}
+        {/* Grid components */}
         {project.components.map((component: Component) => {
           const from = holeCenter(component.holeA);
           const to = holeCenter(component.holeB);
           const selected = component.id === selectedComponentId;
           return (
-            <g
-              key={component.id}
-              className={styles.componentHit}
+            <g key={component.id} className={styles.componentHit}
               data-testid={`component-${component.id}`}
               onClick={(e) => { e.stopPropagation(); onComponentSelect(component.id); }}
             >
@@ -526,15 +671,28 @@ export function BoardCanvas({
                   ? <SchematicLEDBody from={from} to={to} selected={selected} value={component.value} />
                   : <LEDBody from={from} to={to} selected={selected} value={component.value} />
                 : <CapacitorBody from={from} to={to} selected={selected} />}
-              <text
-                x={(from.x + to.x) / 2}
-                y={Math.min(from.y, to.y) - 10}
-                className={styles.componentLabel}
-                textAnchor="middle"
-              >
+              <text x={(from.x + to.x) / 2} y={Math.min(from.y, to.y) - 10}
+                className={styles.componentLabel} textAnchor="middle">
                 {component.label}
               </text>
             </g>
+          );
+        })}
+
+        {/* Free components (batteries) */}
+        {displayedFreeComponents.map((fc) => {
+          const selected = fc.id === selectedFreeComponentId;
+          const ptRef = pendingTerminalRef?.componentId === fc.id ? pendingTerminalRef.terminal : null;
+          return (
+            <BatteryBody
+              key={fc.id}
+              fc={fc}
+              selected={selected}
+              pendingTerminal={ptRef}
+              onSelect={() => onFreeComponentSelect(fc.id)}
+              onTerminalClick={(terminal) => onTerminalClick(fc.id, terminal)}
+              onMouseDown={(e) => handleBatteryMouseDown(e, fc)}
+            />
           );
         })}
       </svg>

@@ -1,16 +1,19 @@
 import { holePairKey, holeRefEquals, isHoleInBoard } from "./board";
-import { HoleRef, MutationResult, ProjectFile, Wire, createId, toUtcTimestamp } from "./types";
+import { HoleRef, MutationResult, ProjectFile, TerminalRef, Wire, createId, isTerminalRef, toUtcTimestamp } from "./types";
 
 export function hasDuplicateWire(wires: Wire[], from: HoleRef, to: HoleRef): boolean {
   const key = holePairKey(from, to);
-  return wires.some((wire) => holePairKey(wire.from, wire.to) === key);
+  return wires.some((wire) => {
+    if (isTerminalRef(wire.from) || isTerminalRef(wire.to)) return false;
+    return holePairKey(wire.from as HoleRef, wire.to as HoleRef) === key;
+  });
 }
 
 export function connectProjectHoles(
   project: ProjectFile,
   from: HoleRef,
   to: HoleRef,
-  color: string = "#e26d1a"
+  color?: string
 ): MutationResult {
   if (!project.board || !isHoleInBoard(project.board, from) || !isHoleInBoard(project.board, to)) {
     return { project, error: "Cannot connect holes outside the current board." };
@@ -24,19 +27,37 @@ export function connectProjectHoles(
     return { project, error: "A wire between those holes already exists." };
   }
 
-  const nextWire: Wire = {
-    id: createId("wire"),
-    from,
-    to,
-    color
-  };
-
+  const nextWire: Wire = { id: createId("wire"), from, to, color };
   return {
-    project: {
-      ...project,
-      wires: [...project.wires, nextWire],
-      updatedAt: toUtcTimestamp()
-    }
+    project: { ...project, wires: [...project.wires, nextWire], updatedAt: toUtcTimestamp() }
+  };
+}
+
+export function connectTerminalToHole(
+  project: ProjectFile,
+  terminal: TerminalRef,
+  hole: HoleRef,
+  color?: string
+): MutationResult {
+  if (!project.board || !isHoleInBoard(project.board, hole)) {
+    return { project, error: "Target hole is outside the board." };
+  }
+  const fc = project.freeComponents.find((c) => c.id === terminal.componentId);
+  if (!fc) {
+    return { project, error: "Battery not found." };
+  }
+  const duplicate = project.wires.some(
+    (w) =>
+      isTerminalRef(w.from) &&
+      w.from.componentId === terminal.componentId &&
+      w.from.terminal === terminal.terminal
+  );
+  if (duplicate) {
+    return { project, error: "That terminal already has a wire." };
+  }
+  const nextWire: Wire = { id: createId("wire"), from: terminal, to: hole, color };
+  return {
+    project: { ...project, wires: [...project.wires, nextWire], updatedAt: toUtcTimestamp() }
   };
 }
 
