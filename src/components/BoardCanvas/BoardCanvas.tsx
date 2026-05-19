@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProjectFile, HoleRef, Component, Wire, FreeComponent, TerminalRef, WireEndpoint, isTerminalRef } from "../../model/types";
 import { BATTERY_HEIGHT, BATTERY_WIDTH, BATTERY_POS_TERM_W, BATTERY_POS_TERM_H, BATTERY_NEG_TERM_W, BATTERY_NEG_TERM_H, batteryNegTerminalPos, batteryPosTerminalPos } from "../../model/freeComponent";
+import { WIRE_PALETTE } from "../../model/wireColors";
+import { AWGSize, awgToPx } from "../../model/wireThickness";
 import styles from "./BoardCanvas.module.css";
 
 const SPACING = 28;
@@ -9,18 +11,6 @@ const PAD_RADIUS = 6.5;
 const HOLE_RADIUS = 4.2;
 const STRIP_WIDTH = 2.5;
 const MAX_BODY_LEN = SPACING - 10;
-const CANVAS_MARGIN = 140;
-
-const WIRE_COLORS = [
-  "#e05c5c", "#ff8080", "#c0392b",
-  "#4a9eff", "#38bdf8", "#1d6fa5",
-  "#4caf50", "#a3e635", "#2e7d32",
-  "#ffb347", "#fb923c", "#e67e22",
-  "#c084fc", "#9b59b6", "#e91e8c",
-  "#ffee58", "#f9a825",
-  "#ffffff", "#b0b0b0", "#555555",
-  "#e26d1a",
-];
 
 function holeCenter(hole: HoleRef) {
   return {
@@ -39,7 +29,7 @@ function wireEndpointPos(endpoint: WireEndpoint, freeComponents: FreeComponent[]
 }
 
 function wireColor(wire: Wire, index: number): string {
-  return wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length];
+  return wire.color ?? WIRE_PALETTE[index % WIRE_PALETTE.length];
 }
 
 function arcPath(from: { x: number; y: number }, to: { x: number; y: number }): string {
@@ -481,20 +471,54 @@ export function BoardCanvas({
   const { rows, cols, type: boardType } = project.board;
   const width = PADDING * 2 + (cols - 1) * SPACING;
   const height = PADDING * 2 + (rows - 1) * SPACING;
-  const svgW = width + 2 * CANVAS_MARGIN;
-  const svgH = height + 2 * CANVAS_MARGIN;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const panRef = useRef<{ startX: number; startY: number; origPanX: number; origPanY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [zoom, setZoom] = useState(0.85);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+
+  // ViewBox calculation — zoom by shrinking the visible region
+  const vbW = width / zoom;
+  const vbH = height / zoom;
+  const vbX = (width - vbW) / 2 + panX;
+  const vbY = (height - vbH) / 2 + panY;
+
+  function clampZoom(z: number) {
+    return Math.min(8, Math.max(0.15, parseFloat(z.toFixed(4))));
+  }
+
+  function changeZoom(factor: number) {
+    setZoom((z) => clampZoom(z * factor));
+  }
+
+  function handleWheel(e: React.WheelEvent) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    changeZoom(e.deltaY < 0 ? 1.1 : 1 / 1.1);
+  }
+
+  // Keyboard zoom shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key === "=" || e.key === "+") { e.preventDefault(); changeZoom(1.25); }
+      else if (e.key === "-") { e.preventDefault(); changeZoom(1 / 1.25); }
+      else if (e.key === "0") { e.preventDefault(); setZoom(0.85); setPanX(0); setPanY(0); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   function clientToSvg(clientX: number, clientY: number): { x: number; y: number } {
     const svg = svgRef.current;
     if (!svg) return { x: clientX, y: clientY };
     const rect = svg.getBoundingClientRect();
     return {
-      x: (clientX - rect.left) * (svgW / rect.width) - CANVAS_MARGIN,
-      y: (clientY - rect.top) * (svgH / rect.height) - CANVAS_MARGIN
+      x: (clientX - rect.left) / rect.width * vbW + vbX,
+      y: (clientY - rect.top) / rect.height * vbH + vbY,
     };
   }
 
@@ -523,26 +547,40 @@ export function BoardCanvas({
     setDragPos({ id: fc.id, x: fc.x, y: fc.y });
   }
 
+  function handleWorkspaceMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return;
+    panRef.current = { startX: e.clientX, startY: e.clientY, origPanX: panX, origPanY: panY };
+  }
+
   function handleSvgMouseMove(e: React.MouseEvent) {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const scaleX = svgW / rect.width;
-    const scaleY = svgH / rect.height;
-    setDragPos({
-      id: dragRef.current.id,
-      x: dragRef.current.origX + dx * scaleX,
-      y: dragRef.current.origY + dy * scaleY
-    });
+    if (dragRef.current) {
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      setDragPos({
+        id: dragRef.current.id,
+        x: dragRef.current.origX + dx * (vbW / rect.width),
+        y: dragRef.current.origY + dy * (vbH / rect.height),
+      });
+    } else if (panRef.current) {
+      const dx = e.clientX - panRef.current.startX;
+      const dy = e.clientY - panRef.current.startY;
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      setPanX(panRef.current.origPanX - dx * (vbW / rect.width));
+      setPanY(panRef.current.origPanY - dy * (vbH / rect.height));
+    }
   }
 
   function handleSvgMouseUp() {
-    if (!dragRef.current || !dragPos) { dragRef.current = null; return; }
-    onBatteryMove(dragRef.current.id, dragPos.x, dragPos.y);
+    if (dragRef.current && dragPos) {
+      onBatteryMove(dragRef.current.id, dragPos.x, dragPos.y);
+    }
     dragRef.current = null;
+    panRef.current = null;
     setDragPos(null);
   }
 
@@ -556,21 +594,29 @@ export function BoardCanvas({
       className={styles.wrap}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      onWheel={handleWheel}
     >
+      {/* Zoom controls */}
+      <div className={styles.zoomControls}>
+        <button className={styles.zoomBtn} onClick={() => changeZoom(1.25)} title="Zoom in (Ctrl+scroll)">+</button>
+        <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
+        <button className={styles.zoomBtn} onClick={() => changeZoom(1 / 1.25)} title="Zoom out (Ctrl+scroll)">−</button>
+        <button className={styles.zoomBtn} onClick={() => { setZoom(0.85); setPanX(0); setPanY(0); }} title="Reset zoom">⊡</button>
+      </div>
+
       <svg
         ref={svgRef}
         className={styles.svg}
-        viewBox={`${-CANVAS_MARGIN} ${-CANVAS_MARGIN} ${svgW} ${svgH}`}
-        width={svgW}
-        height={svgH}
+        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
         role="img"
         aria-label="Veroboard canvas"
         onMouseMove={handleSvgMouseMove}
         onMouseUp={handleSvgMouseUp}
         onMouseLeave={handleSvgMouseUp}
       >
-        {/* Off-board workspace */}
-        <rect x={-CANVAS_MARGIN} y={-CANVAS_MARGIN} width={svgW} height={svgH} className={styles.workspace} />
+        {/* Off-board workspace — large rect to cover all pan positions */}
+        <rect x={-5000} y={-5000} width={10000} height={10000} className={styles.workspace}
+          onMouseDown={handleWorkspaceMouseDown} style={{ cursor: "grab" }} />
 
         {/* Board surface */}
         <rect x={0} y={0} width={width} height={height} rx={6} className={styles.boardSurface} />
@@ -601,25 +647,6 @@ export function BoardCanvas({
           </text>
         ))}
 
-        {/* Wires */}
-        {project.wires.map((wire, i) => {
-          const from = wireEndpointPos(wire.from, project.freeComponents);
-          const to = wireEndpointPos(wire.to, project.freeComponents);
-          const color = wireColor(wire, i);
-          const selected = wire.id === selectedWireId;
-          return (
-            <g key={wire.id}>
-              <path d={arcPath(from, to)} fill="none" stroke={color} strokeWidth={selected ? 4 : 2.5}
-                strokeLinecap="round" opacity={selected ? 1 : 0.85}
-                className={selected ? styles.wireSelected : styles.wire} />
-              <path d={arcPath(from, to)} fill="none" stroke="transparent" strokeWidth={12}
-                className={styles.wireHit}
-                data-testid={`wire-${wire.id}`}
-                onClick={(e) => { e.stopPropagation(); onWireSelect(wire.id); }} />
-            </g>
-          );
-        })}
-
         {/* Copper pads + holes */}
         {Array.from({ length: rows }, (_, row) =>
           Array.from({ length: cols }, (_, col) => {
@@ -641,6 +668,26 @@ export function BoardCanvas({
             );
           })
         )}
+
+        {/* Wires */}
+        {project.wires.map((wire, i) => {
+          const from = wireEndpointPos(wire.from, project.freeComponents);
+          const to = wireEndpointPos(wire.to, project.freeComponents);
+          const color = wireColor(wire, i);
+          const selected = wire.id === selectedWireId;
+          const baseW = awgToPx(wire.thickness as AWGSize | undefined);
+          return (
+            <g key={wire.id}>
+              <path d={arcPath(from, to)} fill="none" stroke={color} strokeWidth={selected ? baseW + 1.5 : baseW}
+                strokeLinecap="round" opacity={selected ? 1 : 0.85}
+                className={selected ? styles.wireSelected : styles.wire} />
+              <path d={arcPath(from, to)} fill="none" stroke="transparent" strokeWidth={12}
+                className={styles.wireHit}
+                data-testid={`wire-${wire.id}`}
+                onClick={(e) => { e.stopPropagation(); onWireSelect(wire.id); }} />
+            </g>
+          );
+        })}
 
         {/* Grid components */}
         {project.components.map((component: Component) => {

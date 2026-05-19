@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Component, HoleRef, ProjectFile, isTerminalRef } from "../../model/types";
+import { WIRE_PALETTE } from "../../model/wireColors";
+import { AWG_SIZES, AWGSize } from "../../model/wireThickness";
 import styles from "./Inspector.module.css";
 
 interface InspectorProps {
@@ -9,6 +11,8 @@ interface InspectorProps {
   selectedComponentId: string | null;
   statusMessage: string;
   onUpdateComponent: (id: string, fields: Partial<Pick<Component, "label" | "value" | "tolerance" | "voltageRating">>) => void;
+  onRecolourWire?: (wireId: string, color: string) => void;
+  onReThickenWire?: (wireId: string, thickness: AWGSize) => void;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -71,7 +75,9 @@ export function Inspector({
   selectedWireId,
   selectedComponentId,
   statusMessage,
-  onUpdateComponent
+  onUpdateComponent,
+  onRecolourWire,
+  onReThickenWire
 }: InspectorProps) {
   const selectedWire = selectedWireId
     ? project.wires.find((w) => w.id === selectedWireId)
@@ -116,12 +122,35 @@ export function Inspector({
         {selectedWire && (
           <>
             <Row label="Wire" value={selectedWire.id.slice(0, 14) + "…"} />
-            {selectedWire.color && (
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Colour</span>
-                <span className={styles.wireSwatch} style={{ background: selectedWire.color }} />
-              </div>
-            )}
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Colour</span>
+            </div>
+            <div className={styles.paletteGrid}>
+              {WIRE_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  className={`${styles.paletteDot} ${c === selectedWire.color ? styles.paletteDotActive : ""}`}
+                  style={{ background: c }}
+                  title={c}
+                  onClick={() => onRecolourWire?.(selectedWire.id, c)}
+                />
+              ))}
+            </div>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Gauge (AWG)</span>
+            </div>
+            <div className={styles.awgGrid}>
+              {AWG_SIZES.map((awg) => (
+                <button
+                  key={awg}
+                  className={`${styles.awgDot} ${awg === selectedWire.thickness ? styles.awgDotActive : ""}`}
+                  title={`AWG ${awg}`}
+                  onClick={() => onReThickenWire?.(selectedWire.id, awg)}
+                >
+                  {awg}
+                </button>
+              ))}
+            </div>
             <Row label="From" value={isTerminalRef(selectedWire.from) ? `${selectedWire.from.terminal === "pos" ? "+" : "−"} terminal` : `R${(selectedWire.from).row + 1} C${(selectedWire.from).col + 1}`} />
             <Row label="To" value={isTerminalRef(selectedWire.to) ? `${selectedWire.to.terminal === "pos" ? "+" : "−"} terminal` : `R${(selectedWire.to).row + 1} C${(selectedWire.to).col + 1}`} />
           </>

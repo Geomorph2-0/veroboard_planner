@@ -13,7 +13,8 @@ export function connectProjectHoles(
   project: ProjectFile,
   from: HoleRef,
   to: HoleRef,
-  color?: string
+  color?: string,
+  thickness?: number
 ): MutationResult {
   if (!project.board || !isHoleInBoard(project.board, from) || !isHoleInBoard(project.board, to)) {
     return { project, error: "Cannot connect holes outside the current board." };
@@ -27,7 +28,7 @@ export function connectProjectHoles(
     return { project, error: "A wire between those holes already exists." };
   }
 
-  const nextWire: Wire = { id: createId("wire"), from, to, color };
+  const nextWire: Wire = { id: createId("wire"), from, to, color, thickness };
   return {
     project: { ...project, wires: [...project.wires, nextWire], updatedAt: toUtcTimestamp() }
   };
@@ -37,7 +38,8 @@ export function connectTerminalToHole(
   project: ProjectFile,
   terminal: TerminalRef,
   hole: HoleRef,
-  color?: string
+  color?: string,
+  thickness?: number
 ): MutationResult {
   if (!project.board || !isHoleInBoard(project.board, hole)) {
     return { project, error: "Target hole is outside the board." };
@@ -55,9 +57,35 @@ export function connectTerminalToHole(
   if (duplicate) {
     return { project, error: "That terminal already has a wire." };
   }
-  const nextWire: Wire = { id: createId("wire"), from: terminal, to: hole, color };
+  const nextWire: Wire = { id: createId("wire"), from: terminal, to: hole, color, thickness };
   return {
     project: { ...project, wires: [...project.wires, nextWire], updatedAt: toUtcTimestamp() }
+  };
+}
+
+export function setWireThickness(project: ProjectFile, wireId: string, thickness: number): MutationResult {
+  if (!project.wires.some((w) => w.id === wireId)) {
+    return { project, error: "Wire not found." };
+  }
+  return {
+    project: {
+      ...project,
+      wires: project.wires.map((w) => w.id === wireId ? { ...w, thickness } : w),
+      updatedAt: toUtcTimestamp(),
+    },
+  };
+}
+
+export function setWireColor(project: ProjectFile, wireId: string, color: string): MutationResult {
+  if (!project.wires.some((w) => w.id === wireId)) {
+    return { project, error: "Wire not found." };
+  }
+  return {
+    project: {
+      ...project,
+      wires: project.wires.map((w) => w.id === wireId ? { ...w, color } : w),
+      updatedAt: toUtcTimestamp(),
+    },
   };
 }
 

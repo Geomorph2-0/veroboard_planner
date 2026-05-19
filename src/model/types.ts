@@ -41,6 +41,7 @@ export interface Wire {
   from: WireEndpoint;
   to: WireEndpoint;
   color?: string;
+  thickness?: number;
 }
 
 export interface Component {

@@ -15,10 +15,10 @@
 
 .canvas {
   flex: 1;
-  overflow: auto;
-  padding: 24px;
+  overflow: hidden;
+  padding: 16px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   background: var(--bg-app);
 }

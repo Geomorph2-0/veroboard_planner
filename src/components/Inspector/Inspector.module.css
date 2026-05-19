@@ -112,3 +112,62 @@
   border: 1px solid rgba(0,0,0,0.3);
   flex-shrink: 0;
 }
+
+.paletteGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 4px 14px 8px;
+}
+
+.paletteDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.25);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.paletteDot:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+}
+
+.paletteDotActive {
+  box-shadow: 0 0 0 2.5px #fff, 0 0 0 4px rgba(255,255,255,0.5);
+  transform: scale(1.1);
+}
+
+.awgGrid {
+  display: flex;
+  gap: 3px;
+  padding: 4px 14px 8px;
+  flex-wrap: wrap;
+}
+
+.awgDot {
+  flex: 1;
+  min-width: 22px;
+  background: none;
+  border: 1px solid var(--border-soft, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  padding: 3px 0;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.awgDot:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+}
+
+.awgDotActive {
+  background: var(--accent-faint, rgba(99,102,241,0.2));
+  color: var(--accent);
+  border-color: var(--accent);
+}

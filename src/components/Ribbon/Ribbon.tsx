@@ -2,17 +2,9 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { supabase } from "../../lib/supabase";
 
-const WIRE_PALETTE = [
-  "#e05c5c", "#ff8080", "#c0392b",
-  "#4a9eff", "#38bdf8", "#1d6fa5",
-  "#4caf50", "#a3e635", "#2e7d32",
-  "#ffb347", "#fb923c", "#e67e22",
-  "#c084fc", "#9b59b6", "#e91e8c",
-  "#ffee58", "#f9a825",
-  "#ffffff", "#b0b0b0", "#555555",
-  "#e26d1a",
-];
 import { EditorTool } from "../../editor/interactions";
+import { WIRE_PALETTE } from "../../model/wireColors";
+import { AWG_SIZES, AWGSize } from "../../model/wireThickness";
 import { BoardType } from "../../model/types";
 import styles from "./Ribbon.module.css";
 
@@ -31,9 +23,11 @@ interface RibbonProps {
   theme: "dark" | "light";
   ledSymbolStyle: "physical" | "schematic";
   wireColour: string | null;
+  wireThickness: AWGSize;
   onProjectNameChange: (name: string) => void;
   onToggleLedSymbolStyle: () => void;
   onWireColourChange: (colour: string) => void;
+  onWireThicknessChange: (thickness: AWGSize) => void;
   onToolChange: (tool: EditorTool) => void;
   onBoardTypeChange: (type: BoardType) => void;
   onResizeBoard: (rows: number, cols: number) => void;
@@ -85,11 +79,13 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function WireBtn({ active, wireColour, onSelect, onColourChange }: {
+function WireBtn({ active, wireColour, wireThickness, onSelect, onColourChange, onThicknessChange }: {
   active: boolean;
   wireColour: string | null;
+  wireThickness: AWGSize;
   onSelect: () => void;
   onColourChange: (c: string) => void;
+  onThicknessChange: (t: AWGSize) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -120,24 +116,39 @@ function WireBtn({ active, wireColour, onSelect, onColourChange }: {
 
   return (
     <div ref={wrapRef} className={styles.wireBtn}>
-      <button
-        type="button"
-        className={`${styles.wireBtnMain} ${active ? styles.btnActive : ""}`}
-        onClick={onSelect}
-      >
-        <span className={styles.btnIcon}>⌇</span>
-        <span className={styles.btnLabel}>Wire</span>
-      </button>
-      <button
-        ref={arrowRef}
-        type="button"
-        className={`${styles.wireBtnArrow} ${active ? styles.btnActive : ""}`}
-        onClick={handleArrowClick}
-        title="Wire colour"
-      >
-        <span className={styles.wireDot} style={{ background: dotColour }} />
-        <span style={{ fontSize: 8 }}>▾</span>
-      </button>
+      <div className={styles.wireBtnTop}>
+        <button
+          type="button"
+          className={`${styles.wireBtnMain} ${active ? styles.btnActive : ""}`}
+          onClick={onSelect}
+        >
+          <span className={styles.btnIcon}>⌇</span>
+          <span className={styles.btnLabel}>Wire</span>
+        </button>
+        <button
+          ref={arrowRef}
+          type="button"
+          className={`${styles.wireBtnArrow} ${active ? styles.btnActive : ""}`}
+          onClick={handleArrowClick}
+          title="Wire colour"
+        >
+          <span className={styles.wireDot} style={{ background: dotColour }} />
+          <span style={{ fontSize: 8 }}>▾</span>
+        </button>
+      </div>
+      <div className={styles.awgRow}>
+        {AWG_SIZES.map((awg) => (
+          <button
+            key={awg}
+            type="button"
+            className={`${styles.awgBtn} ${awg === wireThickness ? styles.awgBtnActive : ""}`}
+            onClick={(e) => { e.stopPropagation(); onThicknessChange(awg); }}
+            title={`AWG ${awg}`}
+          >
+            {awg}
+          </button>
+        ))}
+      </div>
       {open && pos && ReactDOM.createPortal(
         <div
           ref={dropRef}
@@ -337,7 +348,9 @@ export function Ribbon({
   ledSymbolStyle,
   onToggleLedSymbolStyle,
   wireColour,
-  onWireColourChange
+  wireThickness,
+  onWireColourChange,
+  onWireThicknessChange
 }: RibbonProps) {
   const [activeTab, setActiveTab] = useState<RibbonTab>("home");
   const [rowsInput, setRowsInput] = useState(String(rows));
@@ -450,7 +463,7 @@ export function Ribbon({
         {activeTab === "insert" && (
           <>
             <Group label="Wire">
-              <WireBtn active={tool === "wire"} wireColour={wireColour} onSelect={() => onToolChange("wire")} onColourChange={onWireColourChange} />
+              <WireBtn active={tool === "wire"} wireColour={wireColour} wireThickness={wireThickness} onSelect={() => onToolChange("wire")} onColourChange={onWireColourChange} onThicknessChange={onWireThicknessChange} />
             </Group>
             <Divider />
             <Group label="Components">

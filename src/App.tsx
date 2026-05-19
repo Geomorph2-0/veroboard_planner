@@ -161,7 +161,9 @@ export default function App() {
         ledSymbolStyle={ledSymbolStyle}
         onToggleLedSymbolStyle={() => setLedSymbolStyle(s => s === "physical" ? "schematic" : "physical")}
         wireColour={store.wireColour}
+        wireThickness={store.wireThickness}
         onWireColourChange={store.setWireColour}
+        onWireThicknessChange={store.setWireThickness}
       />
       </div>
 
@@ -212,6 +214,8 @@ export default function App() {
           selectedComponentId={store.selectedComponentId}
           statusMessage={store.statusMessage}
           onUpdateComponent={store.updateComponent}
+          onRecolourWire={store.recolourWire}
+          onReThickenWire={store.reThickenWire}
         />
         </div>
       </div>

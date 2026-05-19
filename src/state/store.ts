@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { validateBoardDimensions } from "../editor/validation";
 import { removeProjectComponent, placeProjectComponent } from "../model/component";
 import { resizeBoard } from "../model/board";
-import { connectProjectHoles, connectTerminalToHole, disconnectProjectWire } from "../model/wire";
+import { connectProjectHoles, connectTerminalToHole, disconnectProjectWire, setWireColor, setWireThickness } from "../model/wire";
+import { AWGSize } from "../model/wireThickness";
 import { moveFreeComponent, placeFreeComponent, removeFreeComponent } from "../model/freeComponent";
 import {
   BoardType,
@@ -45,9 +46,11 @@ export interface PlannerState {
   statusMessage: string;
   componentDraft: ComponentDraft;
   wireColour: string | null;
+  wireThickness: AWGSize;
 
   setTool: (tool: EditorTool) => void;
   setWireColour: (colour: string | null) => void;
+  setWireThickness: (thickness: AWGSize) => void;
   setPendingHole: (hole: HoleRef | null) => void;
   setSelectedWireId: (id: string | null) => void;
   setSelectedComponentId: (id: string | null) => void;
@@ -66,6 +69,8 @@ export interface PlannerState {
   moveBattery: (id: string, x: number, y: number) => void;
   removeBattery: (id: string) => boolean;
   connectTerminal: (terminal: TerminalRef, hole: HoleRef) => boolean;
+  recolourWire: (wireId: string, color: string) => void;
+  reThickenWire: (wireId: string, thickness: AWGSize) => void;
   selectedFreeComponentId: string | null;
   setSelectedFreeComponentId: (id: string | null) => void;
   undo: () => void;
@@ -91,8 +96,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   statusMessage: "Add a board to get started.",
   componentDraft: defaultDraft,
   wireColour: null,
+  wireThickness: 20 as AWGSize,
 
   setWireColour: (colour) => set({ wireColour: colour }),
+  setWireThickness: (thickness) => set({ wireThickness: thickness }),
 
   setTool: (tool) => {
     set({
@@ -182,7 +189,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const { project, past } = get();
     if (!project.board) { set({ statusMessage: "Add a board first." }); return false; }
     const colour = get().wireColour ?? undefined;
-    const result = connectProjectHoles(project, from, to, colour);
+    const thickness = get().wireThickness;
+    const result = connectProjectHoles(project, from, to, colour, thickness);
     if (result.error) { set({ statusMessage: result.error }); return false; }
     set({ past: pushHistory(past, project), future: [], project: result.project, statusMessage: "Wire created." });
     return true;
@@ -256,10 +264,25 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     return true;
   },
 
+  recolourWire: (wireId, color) => {
+    const { project, past } = get();
+    const result = setWireColor(project, wireId, color);
+    if (result.error) return;
+    set({ past: pushHistory(past, project), future: [], project: result.project });
+  },
+
+  reThickenWire: (wireId, thickness) => {
+    const { project, past } = get();
+    const result = setWireThickness(project, wireId, thickness);
+    if (result.error) return;
+    set({ past: pushHistory(past, project), future: [], project: result.project });
+  },
+
   connectTerminal: (terminal, hole) => {
     const { project, past } = get();
     const colour = get().wireColour ?? undefined;
-    const result = connectTerminalToHole(project, terminal, hole, colour);
+    const thickness = get().wireThickness;
+    const result = connectTerminalToHole(project, terminal, hole, colour, thickness);
     if (result.error) { set({ statusMessage: result.error }); return false; }
     set({ past: pushHistory(past, project), future: [], project: result.project, statusMessage: "Wire connected." });
     return true;

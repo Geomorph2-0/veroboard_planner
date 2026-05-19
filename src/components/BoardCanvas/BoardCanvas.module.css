@@ -1,18 +1,71 @@
 .wrap {
-  overflow: auto;
+  flex: 1;
+  align-self: stretch;
+  overflow: hidden;
   border-radius: 6px;
-  background: #111;
+  background: #1a1a1a;
   padding: 0;
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.zoomControls {
+  position: sticky;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(30, 30, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 3px 5px;
+  backdrop-filter: blur(4px);
+  float: left;
+  margin: 8px 0 -32px 8px;
+}
+
+.zoomBtn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 14px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.zoomBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.zoomLabel {
+  color: #999;
+  font-size: 10px;
+  font-family: "JetBrains Mono", monospace;
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
 }
 
 .svg {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Off-board workspace area */
 .workspace {
-  fill: #141414;
+  fill: #ffffff;
 }
 
 /* Board surface — warm orange-brown phenolic, matching real veroboard */
