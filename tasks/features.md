@@ -48,19 +48,30 @@ Updated before every commit. Present to user for verification before pushing.
 
 ### Near-term
 - [ ] Cut copper strip — mark a break in a stripboard row between two holes
-- [ ] Wire colour picker — let user choose the colour of each wire
 - [ ] Snap-to-grid visual feedback while placing components
 - [ ] Multi-select and bulk delete
 - [ ] Export canvas as PNG or SVG image
 
 ### Later
-- [ ] More component types — diodes, transistors, ICs (DIP packages)
+- [ ] More component types — transistors, MOSFETs, relays, switches, potentiometers
 - [ ] Netlist / connectivity check — highlight which holes are electrically connected
 - [ ] Auto-save to localStorage
 - [ ] Project manager — multiple named projects in-browser
-- [ ] Zoom and pan on large boards
 - [ ] Mobile / touch support
 
 ### v0.5.4 — File menu UX
 - [x] Print disabled (greyed out) when no board is open
 - [x] New project prompts to save first if a board is open (Save & New / Discard / Cancel)
+
+### v0.5.5 — Zoom, wire tools, and batteries
+- [x] SVG viewBox-based zoom + pan replaces CSS scale (dead zones eliminated)
+- [x] Browser zoom prevention — non-passive wheel listener scoped to canvas wrapper only
+- [x] Wire recolouring — inline 21-colour palette in Inspector for selected wires
+- [x] Wire AWG thickness — 12–24 AWG inline buttons in Ribbon and Inspector
+- [x] Wire render order fixed — wires render above copper pads (no punch-through dots)
+- [x] 9V battery (PP3 / Hi-Watt) — drag-drop free component; pos/neg terminals snap to board holes
+- [x] Li-Ion 18650 battery — drag-drop; `subType: "18650"`; rectangle body (rx=4); both terminals 24×10 rects
+- [x] Battery sub-picker in Ribbon — click Battery → portal dropdown grid (Hi-Watt / Li-Ion, max 3-col)
+- [x] AddBoard centering regression fixed (zoom layout change had broken it)
+- [x] Wire colour/AWG controls centred in Ribbon; colour dropdown widened to 160px
+- [x] `research/Battery/Li-Ion/18650/` — 11 renamed reference images + README
