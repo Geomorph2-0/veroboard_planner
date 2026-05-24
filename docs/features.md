@@ -6,6 +6,9 @@ Updated before every commit. Present to user for verification before pushing.
 
 ## Shipped
 
+### v0.5.11 — In-app changelog catch-up
+- [x] `CURRENT_VERSION` bumped to `0.5.10`; changelog entries added for v0.4.0, v0.5.0, v0.5.4, v0.5.5, v0.5.7 — returning users will now see all missing What's New entries on next sign-in
+
 ### v0.5.10 — E2E test foundation + Ribbon split
 - [x] First Playwright E2E suite (`tests/e2e/`): board add, wire place/select/delete, resistor place + undo/redo, and a save→reload→re-open round-trip
 - [x] Env-gated auth bypass (`VITE_E2E_AUTH_BYPASS`) in `AuthGate.tsx` — inert in normal builds; lets E2E reach the canvas without Supabase login
