@@ -6,6 +6,13 @@ Updated before every commit. Present to user for verification before pushing.
 
 ## Shipped
 
+### v0.5.10 — E2E test foundation + Ribbon split
+- [x] First Playwright E2E suite (`tests/e2e/`): board add, wire place/select/delete, resistor place + undo/redo, and a save→reload→re-open round-trip
+- [x] Env-gated auth bypass (`VITE_E2E_AUTH_BYPASS`) in `AuthGate.tsx` — inert in normal builds; lets E2E reach the canvas without Supabase login
+- [x] `data-testid`s added to AddBoard, Ribbon controls, and ComponentPopup for stable test targeting
+- [x] Split the 586-line `Ribbon.tsx` into a 154-line container + `constants.ts`, `shared/` (button/group/divider), `parts/` (TitleBar, FileMenuBtn, WireBtn, ComponentsMenuBtn, BatteryMenuBtn), `tabs/` (Home/Insert/View)
+- [x] Internal refactor + tests — zero user-visible behaviour change
+
 ### v0.5.9 — BoardCanvas refactor
 - [x] Split the 855-line `BoardCanvas.tsx` into focused modules (internal refactor, zero user-visible behaviour change)
 - [x] Extracted `constants.ts` and `geometry.ts` (`holeCenter` / `wireEndpointPos` / `wireColor` / `arcPath`)

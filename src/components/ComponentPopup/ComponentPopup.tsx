@@ -130,7 +130,7 @@ export function ComponentPopup({ type, defaultLabel, onConfirm, onCancel }: Comp
         </div>
         <div className={styles.actions}>
           <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
-          <button className={styles.confirmBtn} onClick={handleConfirm}>Place</button>
+          <button data-testid="component-popup-place" className={styles.confirmBtn} onClick={handleConfirm}>Place</button>
         </div>
       </div>
     </div>

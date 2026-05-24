@@ -1,14 +1,14 @@
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom";
-import { supabase } from "../../lib/supabase";
-
+import { ChangeEvent, useRef, useState } from "react";
 import { EditorTool } from "../../editor/interactions";
-import { WIRE_PALETTE } from "../../model/wireColors";
-import { AWG_SIZES, AWGSize } from "../../model/wireThickness";
+import { AWGSize } from "../../model/wireThickness";
 import { BoardType } from "../../model/types";
 import styles from "./Ribbon.module.css";
-
-type RibbonTab = "home" | "insert" | "view";
+import { RibbonTab, RIBBON_TABS } from "./constants";
+import { TitleBar } from "./parts/TitleBar";
+import { FileMenuBtn } from "./parts/FileMenuBtn";
+import { HomeTab } from "./tabs/HomeTab";
+import { InsertTab } from "./tabs/InsertTab";
+import { ViewTab } from "./tabs/ViewTab";
 
 interface RibbonProps {
   projectName: string;
@@ -42,402 +42,18 @@ interface RibbonProps {
   canPrint: boolean;
 }
 
-function Divider() {
-  return <div className={styles.divider} />;
-}
+export function Ribbon(props: RibbonProps) {
+  const {
+    projectName, tool, boardType, rows, cols,
+    canDisconnectWire, canRemoveComponent, canUndo, canRedo,
+    theme, ledSymbolStyle, wireColour, wireThickness,
+    onProjectNameChange, onToggleLedSymbolStyle, onWireColourChange, onWireThicknessChange,
+    onToolChange, onBoardTypeChange, onResizeBoard, onDisconnectSelectedWire, onRemoveSelectedComponent,
+    onUndo, onRedo, onSaveProject, onLoadProject, onNewProject, onToggleTheme, canPrint,
+  } = props;
 
-function RibbonBtn({
-  icon, label, onClick, active, disabled, title
-}: {
-  icon: string;
-  label: string;
-  onClick?: () => void;
-  active?: boolean;
-  disabled?: boolean;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      className={`${styles.btn} ${active ? styles.btnActive : ""}`}
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-    >
-      <span className={styles.btnIcon}>{icon}</span>
-      <span className={styles.btnLabel}>{label}</span>
-    </button>
-  );
-}
-
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className={styles.group}>
-      <div className={styles.groupItems}>{children}</div>
-      <div className={styles.groupLabel}>{label}</div>
-    </div>
-  );
-}
-
-function WireBtn({ active, wireColour, wireThickness, onSelect, onColourChange, onThicknessChange }: {
-  active: boolean;
-  wireColour: string | null;
-  wireThickness: AWGSize;
-  onSelect: () => void;
-  onColourChange: (c: string) => void;
-  onThicknessChange: (t: AWGSize) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const arrowRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const inWrap = wrapRef.current?.contains(e.target as Node);
-      const inDrop = dropRef.current?.contains(e.target as Node);
-      if (!inWrap && !inDrop) { setOpen(false); setPos(null); }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const handleArrowClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (open) { setOpen(false); setPos(null); return; }
-    const rect = arrowRef.current!.getBoundingClientRect();
-    setPos({ top: rect.bottom + 4, left: rect.left });
-    setOpen(true);
-  };
-
-  const dotColour = wireColour ?? "#e26d1a";
-
-  return (
-    <div ref={wrapRef} className={styles.wireBtn}>
-      <div className={styles.wireBtnTop}>
-        <button
-          type="button"
-          className={`${styles.wireBtnMain} ${active ? styles.btnActive : ""}`}
-          onClick={onSelect}
-        >
-          <span className={styles.btnIcon}>⌇</span>
-          <span className={styles.btnLabel}>Wire</span>
-        </button>
-        <button
-          ref={arrowRef}
-          type="button"
-          className={`${styles.wireBtnArrow} ${active ? styles.btnActive : ""}`}
-          onClick={handleArrowClick}
-          title="Wire colour"
-        >
-          <span className={styles.wireDot} style={{ background: dotColour }} />
-          <span style={{ fontSize: 8 }}>▾</span>
-        </button>
-      </div>
-      <div className={styles.awgRow}>
-        {AWG_SIZES.map((awg) => (
-          <button
-            key={awg}
-            type="button"
-            className={`${styles.awgBtn} ${awg === wireThickness ? styles.awgBtnActive : ""}`}
-            onClick={(e) => { e.stopPropagation(); onThicknessChange(awg); }}
-            title={`AWG ${awg}`}
-          >
-            {awg}
-          </button>
-        ))}
-      </div>
-      {open && pos && ReactDOM.createPortal(
-        <div
-          ref={dropRef}
-          className={styles.wireDropdown}
-          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
-        >
-          {WIRE_PALETTE.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`${styles.wireSwatch} ${c === dotColour ? styles.wireSwatchActive : ""}`}
-              style={{ background: c }}
-              title={c}
-              onClick={() => { onColourChange(c); setOpen(false); setPos(null); }}
-            />
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
-
-function FileMenuBtn({ onNew, onOpen, onSave, onPrint, canPrint }: {
-  onNew: () => void;
-  onOpen: () => void;
-  onSave: () => void;
-  onPrint: () => void;
-  canPrint: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const inBtn = btnRef.current?.contains(e.target as Node);
-      const inDrop = dropRef.current?.contains(e.target as Node);
-      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const handleClick = () => {
-    if (open) { setOpen(false); setPos(null); return; }
-    const rect = btnRef.current!.getBoundingClientRect();
-    setPos({ top: rect.bottom + 4, left: rect.left });
-    setOpen(true);
-  };
-
-  const close = () => { setOpen(false); setPos(null); };
-
-  const items = [
-    { icon: "🗋", label: "New",   action: () => { onNew();   close(); }, disabled: false },
-    { icon: "📂", label: "Open",  action: () => { onOpen();  close(); }, disabled: false },
-    { icon: "💾", label: "Save",  action: () => { onSave();  close(); }, disabled: false },
-    { icon: "🖨", label: "Print", action: () => { onPrint(); close(); }, disabled: !canPrint },
-  ];
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        type="button"
-        className={`${styles.tab} ${open ? styles.tabActive : ""}`}
-        onClick={handleClick}
-      >
-        File
-      </button>
-      {open && pos && ReactDOM.createPortal(
-        <div
-          ref={dropRef}
-          className={styles.fileMenu}
-          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
-        >
-          {items.map(({ icon, label, action, disabled }) => (
-            <button
-              key={label}
-              type="button"
-              className={styles.fileMenuItem}
-              onClick={disabled ? undefined : action}
-              style={disabled ? { opacity: 0.38, cursor: "not-allowed" } : undefined}
-            >
-              <span className={styles.fileMenuIcon}>{icon}</span>
-              {label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-const COMPONENT_ITEMS: { type: EditorTool; icon: string; label: string }[] = [
-  { type: "resistor",  icon: "▭",  label: "Resistor"  },
-  { type: "capacitor", icon: "⊣⊢", label: "Capacitor" },
-  { type: "led",       icon: "◉",  label: "LED"        },
-  { type: "diode",     icon: "▷|", label: "Diode"      },
-  { type: "inductor",  icon: "∿",  label: "Inductor"   },
-  { type: "crystal",   icon: "◇",  label: "Crystal"    },
-  { type: "ic",        icon: "▣",  label: "IC"         },
-  { type: "connector", icon: "⊞",  label: "Connector"  },
-];
-
-const COMPONENT_TOOLS = new Set(COMPONENT_ITEMS.map(c => c.type));
-
-const BATTERY_ITEMS = [
-  { subType: "9v" as const,    icon: "🔋", label: "Hi-Watt", dragKey: "battery-9v" },
-  { subType: "18650" as const, icon: "⚡", label: "Li-Ion",  dragKey: "battery-18650" },
-];
-
-const RIBBON_TABS: { id: RibbonTab; label: string }[] = [
-  { id: "home",   label: "Home"   },
-  { id: "insert", label: "Insert" },
-  { id: "view",   label: "View"   },
-];
-
-function BatteryMenuBtn() {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const inBtn = btnRef.current?.contains(e.target as Node);
-      const inDrop = dropRef.current?.contains(e.target as Node);
-      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const handleClick = () => {
-    if (open) { setOpen(false); setPos(null); return; }
-    const rect = btnRef.current!.getBoundingClientRect();
-    setPos({ top: rect.bottom + 4, left: rect.left });
-    setOpen(true);
-  };
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        type="button"
-        className={styles.btn}
-        onClick={handleClick}
-        title="Choose battery type"
-      >
-        <span className={styles.btnIcon}>🔋</span>
-        <span className={styles.btnLabel}>Battery</span>
-      </button>
-      {open && pos && ReactDOM.createPortal(
-        <div
-          ref={dropRef}
-          className={styles.compMenu}
-          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
-        >
-          {BATTERY_ITEMS.map(({ icon, label, dragKey }) => (
-            <div
-              key={dragKey}
-              draggable
-              className={styles.compMenuItem}
-              onDragStart={(e) => {
-                e.dataTransfer.setData("tool", dragKey);
-                e.dataTransfer.effectAllowed = "copy";
-              }}
-              onDragEnd={() => { setOpen(false); setPos(null); }}
-              title={`Drag to place ${label}`}
-              style={{ cursor: "grab" }}
-            >
-              <span className={styles.compMenuIcon}>{icon}</span>
-              <span className={styles.compMenuLabel}>{label}</span>
-            </div>
-          ))}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-function ComponentsMenuBtn({ tool, onToolChange }: { tool: EditorTool; onToolChange: (t: EditorTool) => void }) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const inBtn = btnRef.current?.contains(e.target as Node);
-      const inDrop = dropRef.current?.contains(e.target as Node);
-      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const handleClick = () => {
-    if (open) { setOpen(false); setPos(null); return; }
-    const rect = btnRef.current!.getBoundingClientRect();
-    setPos({ top: rect.bottom + 4, left: rect.left });
-    setOpen(true);
-  };
-
-  const isActive = COMPONENT_TOOLS.has(tool);
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        type="button"
-        className={`${styles.btn} ${isActive ? styles.btnActive : ""}`}
-        onClick={handleClick}
-        title="Choose component type"
-      >
-        <span className={styles.btnIcon}>⬡</span>
-        <span className={styles.btnLabel}>Components</span>
-      </button>
-      {open && pos && ReactDOM.createPortal(
-        <div
-          ref={dropRef}
-          className={styles.compMenu}
-          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
-        >
-          {COMPONENT_ITEMS.map(({ type, icon, label }) => (
-            <button
-              key={type}
-              type="button"
-              className={`${styles.compMenuItem} ${tool === type ? styles.compMenuItemActive : ""}`}
-              onClick={() => { onToolChange(type); setOpen(false); setPos(null); }}
-            >
-              <span className={styles.compMenuIcon}>{icon}</span>
-              <span className={styles.compMenuLabel}>{label}</span>
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-export function Ribbon({
-  projectName,
-  tool,
-  boardType,
-  rows,
-  cols,
-  canDisconnectWire,
-  canRemoveComponent,
-  canUndo,
-  canRedo,
-  theme,
-  onProjectNameChange,
-  onToolChange,
-  onBoardTypeChange,
-  onResizeBoard,
-  onDisconnectSelectedWire,
-  onRemoveSelectedComponent,
-  onUndo,
-  onRedo,
-  onSaveProject,
-  onLoadProject,
-  onNewProject,
-  onToggleTheme,
-  canPrint,
-  ledSymbolStyle,
-  onToggleLedSymbolStyle,
-  wireColour,
-  wireThickness,
-  onWireColourChange,
-  onWireThicknessChange
-}: RibbonProps) {
   const [activeTab, setActiveTab] = useState<RibbonTab>("home");
-  const [rowsInput, setRowsInput] = useState(String(rows));
-  const [colsInput, setColsInput] = useState(String(cols));
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setRowsInput(String(rows));
-    setColsInput(String(cols));
-  }, [rows, cols]);
 
   const handleLoadFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -448,32 +64,12 @@ export function Ribbon({
 
   return (
     <header className={styles.ribbon}>
-      {/* Title bar */}
-      <div className={styles.titleBar}>
-        <span className={styles.logo}>⬛ Veroboard Planner</span>
-        <input
-          className={styles.projectName}
-          value={projectName}
-          onChange={(e) => onProjectNameChange(e.target.value)}
-          aria-label="Project name"
-        />
-        <button
-          type="button"
-          className={styles.themeToggle}
-          onClick={onToggleTheme}
-          title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-        >
-          {theme === "dark" ? "☀" : "☾"}
-        </button>
-        <button
-          type="button"
-          className={styles.logoutBtn}
-          onClick={() => supabase.auth.signOut()}
-          title="Log out"
-        >
-          ⏻
-        </button>
-      </div>
+      <TitleBar
+        projectName={projectName}
+        theme={theme}
+        onProjectNameChange={onProjectNameChange}
+        onToggleTheme={onToggleTheme}
+      />
 
       {/* Tab bar */}
       <div className={styles.tabBar}>
@@ -508,6 +104,7 @@ export function Ribbon({
       {/* Hidden file input — always mounted */}
       <input
         ref={fileInputRef}
+        data-testid="ribbon-file-input"
         type="file"
         accept="application/json"
         className={styles.hiddenInput}
@@ -516,70 +113,41 @@ export function Ribbon({
 
       {/* Ribbon panel */}
       <div className={styles.panel}>
-
         {activeTab === "home" && (
-          <>
-            <Group label="History">
-              <RibbonBtn icon="↩" label="Undo" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
-              <RibbonBtn icon="↪" label="Redo" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" />
-            </Group>
-            <Divider />
-            <Group label="Selection">
-              <RibbonBtn icon="✂" label="Del Wire" onClick={onDisconnectSelectedWire} disabled={!canDisconnectWire} />
-              <RibbonBtn icon="✕" label="Del Part" onClick={onRemoveSelectedComponent} disabled={!canRemoveComponent} />
-            </Group>
-          </>
+          <HomeTab
+            canUndo={canUndo}
+            canRedo={canRedo}
+            canDisconnectWire={canDisconnectWire}
+            canRemoveComponent={canRemoveComponent}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            onDisconnectSelectedWire={onDisconnectSelectedWire}
+            onRemoveSelectedComponent={onRemoveSelectedComponent}
+          />
         )}
-
         {activeTab === "insert" && (
-          <>
-            <Group label="Wire">
-              <WireBtn active={tool === "wire"} wireColour={wireColour} wireThickness={wireThickness} onSelect={() => onToolChange("wire")} onColourChange={onWireColourChange} onThicknessChange={onWireThicknessChange} />
-            </Group>
-            <Divider />
-            <Group label="Components">
-              <ComponentsMenuBtn tool={tool} onToolChange={onToolChange} />
-            </Group>
-            <Divider />
-            <Group label="Power">
-              <BatteryMenuBtn />
-            </Group>
-            <Divider />
-            <Group label="Board">
-              <RibbonBtn icon="≡" label="Stripboard" onClick={() => onBoardTypeChange("stripboard")} active={boardType === "stripboard"} disabled={!boardType} />
-              <RibbonBtn icon="⊞" label="Perfboard" onClick={() => onBoardTypeChange("perfboard")} active={boardType === "perfboard"} disabled={!boardType} />
-            </Group>
-            <Divider />
-            <Group label="Board Size">
-              <div className={styles.sizeRow}>
-                <label className={styles.sizeField}>
-                  <span className={styles.sizeFieldLabel}>Rows</span>
-                  <input className={styles.sizeInput} type="number" min={1} value={rowsInput} onChange={(e) => setRowsInput(e.target.value)} />
-                </label>
-                <span className={styles.sizeSep}>×</span>
-                <label className={styles.sizeField}>
-                  <span className={styles.sizeFieldLabel}>Cols</span>
-                  <input className={styles.sizeInput} type="number" min={1} value={colsInput} onChange={(e) => setColsInput(e.target.value)} />
-                </label>
-                <button type="button" className={styles.applyBtn} onClick={() => onResizeBoard(parseInt(rowsInput, 10), parseInt(colsInput, 10))}>Apply</button>
-              </div>
-            </Group>
-          </>
-        )}
-
-        {activeTab === "view" && (
-          <Group label="Theme">
-            <RibbonBtn icon="☾" label="Dark" onClick={() => theme !== "dark" && onToggleTheme()} active={theme === "dark"} />
-            <RibbonBtn icon="☀" label="Light" onClick={() => theme !== "light" && onToggleTheme()} active={theme === "light"} />
-          </Group>
+          <InsertTab
+            tool={tool}
+            boardType={boardType}
+            rows={rows}
+            cols={cols}
+            wireColour={wireColour}
+            wireThickness={wireThickness}
+            onToolChange={onToolChange}
+            onBoardTypeChange={onBoardTypeChange}
+            onResizeBoard={onResizeBoard}
+            onWireColourChange={onWireColourChange}
+            onWireThicknessChange={onWireThicknessChange}
+          />
         )}
         {activeTab === "view" && (
-          <Group label="LED Symbol">
-            <RibbonBtn icon="◉" label="Physical" onClick={() => ledSymbolStyle !== "physical" && onToggleLedSymbolStyle()} active={ledSymbolStyle === "physical"} />
-            <RibbonBtn icon="◁|" label="Schematic" onClick={() => ledSymbolStyle !== "schematic" && onToggleLedSymbolStyle()} active={ledSymbolStyle === "schematic"} />
-          </Group>
+          <ViewTab
+            theme={theme}
+            ledSymbolStyle={ledSymbolStyle}
+            onToggleTheme={onToggleTheme}
+            onToggleLedSymbolStyle={onToggleLedSymbolStyle}
+          />
         )}
-
       </div>
     </header>
   );

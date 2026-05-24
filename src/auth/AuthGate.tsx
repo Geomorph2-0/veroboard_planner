@@ -13,11 +13,20 @@ function computeWhatsNew(user: User): { entries: ChangeEntry[]; isNewUser: boole
   return { entries, isNewUser: false };
 }
 
+// E2E test bypass — when VITE_E2E_AUTH_BYPASS is set, skip Supabase auth entirely.
+// Inert in normal builds (flag unset). The mock user's lastSeenVersion = CURRENT_VERSION
+// so computeWhatsNew yields no entries and the What's New popup never overlays the canvas.
+const E2E_BYPASS = import.meta.env.VITE_E2E_AUTH_BYPASS === "true";
+const MOCK_SESSION = {
+  user: { id: "e2e", user_metadata: { lastSeenVersion: CURRENT_VERSION } },
+} as unknown as Session;
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null | "loading">("loading");
+  const [session, setSession] = useState<Session | null | "loading">(E2E_BYPASS ? MOCK_SESSION : "loading");
   const [whatsNew, setWhatsNew] = useState<{ entries: ChangeEntry[]; isNewUser: boolean } | null>(null);
 
   useEffect(() => {
+    if (E2E_BYPASS) return;
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
     });

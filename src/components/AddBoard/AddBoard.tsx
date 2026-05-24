@@ -68,6 +68,7 @@ export function AddBoard({ onAdd }: AddBoardProps) {
       <div className={styles.cards}>
         <button
           type="button"
+          data-testid="addboard-stripboard"
           className={selected === "stripboard" ? `${styles.card} ${styles.cardActive}` : styles.card}
           onClick={() => setSelected("stripboard")}
         >
@@ -78,6 +79,7 @@ export function AddBoard({ onAdd }: AddBoardProps) {
 
         <button
           type="button"
+          data-testid="addboard-perfboard"
           className={selected === "perfboard" ? `${styles.card} ${styles.cardActive}` : styles.card}
           onClick={() => setSelected("perfboard")}
         >
@@ -92,6 +94,7 @@ export function AddBoard({ onAdd }: AddBoardProps) {
           Rows
           <input
             className={styles.sizeInput}
+            data-testid="addboard-rows"
             type="number"
             min={1}
             max={200}
@@ -104,6 +107,7 @@ export function AddBoard({ onAdd }: AddBoardProps) {
           Cols
           <input
             className={styles.sizeInput}
+            data-testid="addboard-cols"
             type="number"
             min={1}
             max={200}
@@ -115,6 +119,7 @@ export function AddBoard({ onAdd }: AddBoardProps) {
 
       <button
         type="button"
+        data-testid="addboard-confirm"
         className={styles.addBtn}
         disabled={!selected}
         onClick={handleAdd}

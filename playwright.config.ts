@@ -14,6 +14,9 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI
+    // reuseExistingServer is off so the dev server always boots WITH the auth-bypass
+    // env below; a stray server started without it would otherwise gate out the tests.
+    reuseExistingServer: false,
+    env: { VITE_E2E_AUTH_BYPASS: "true" }
   }
 });
