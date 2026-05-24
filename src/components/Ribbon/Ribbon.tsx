@@ -259,6 +259,83 @@ const COMPONENT_ITEMS: { type: EditorTool; icon: string; label: string }[] = [
 
 const COMPONENT_TOOLS = new Set(COMPONENT_ITEMS.map(c => c.type));
 
+const BATTERY_ITEMS = [
+  { subType: "9v" as const,    icon: "🔋", label: "Hi-Watt", dragKey: "battery-9v" },
+  { subType: "18650" as const, icon: "⚡", label: "Li-Ion",  dragKey: "battery-18650" },
+];
+
+const RIBBON_TABS: { id: RibbonTab; label: string }[] = [
+  { id: "home",   label: "Home"   },
+  { id: "insert", label: "Insert" },
+  { id: "view",   label: "View"   },
+];
+
+function BatteryMenuBtn() {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const inBtn = btnRef.current?.contains(e.target as Node);
+      const inDrop = dropRef.current?.contains(e.target as Node);
+      if (!inBtn && !inDrop) { setOpen(false); setPos(null); }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleClick = () => {
+    if (open) { setOpen(false); setPos(null); return; }
+    const rect = btnRef.current!.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+    setOpen(true);
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className={styles.btn}
+        onClick={handleClick}
+        title="Choose battery type"
+      >
+        <span className={styles.btnIcon}>🔋</span>
+        <span className={styles.btnLabel}>Battery</span>
+      </button>
+      {open && pos && ReactDOM.createPortal(
+        <div
+          ref={dropRef}
+          className={styles.compMenu}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
+          {BATTERY_ITEMS.map(({ icon, label, dragKey }) => (
+            <div
+              key={dragKey}
+              draggable
+              className={styles.compMenuItem}
+              onDragStart={(e) => {
+                e.dataTransfer.setData("tool", dragKey);
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+              onDragEnd={() => { setOpen(false); setPos(null); }}
+              title={`Drag to place ${label}`}
+              style={{ cursor: "grab" }}
+            >
+              <span className={styles.compMenuIcon}>{icon}</span>
+              <span className={styles.compMenuLabel}>{label}</span>
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 function ComponentsMenuBtn({ tool, onToolChange }: { tool: EditorTool; onToolChange: (t: EditorTool) => void }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -369,12 +446,6 @@ export function Ribbon({
     e.target.value = "";
   };
 
-  const tabs: { id: RibbonTab; label: string }[] = [
-    { id: "home", label: "Home" },
-    { id: "insert", label: "Insert" },
-    { id: "view", label: "View" }
-  ];
-
   return (
     <header className={styles.ribbon}>
       {/* Title bar */}
@@ -413,7 +484,7 @@ export function Ribbon({
           onPrint={() => window.print()}
           canPrint={canPrint}
         />
-        {tabs.map((tab) => (
+        {RIBBON_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -471,19 +542,7 @@ export function Ribbon({
             </Group>
             <Divider />
             <Group label="Power">
-              <button
-                type="button"
-                className={styles.btn}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("tool", "battery");
-                  e.dataTransfer.effectAllowed = "copy";
-                }}
-                title="Drag to place a 9V battery"
-              >
-                <span className={styles.btnIcon}>🔋</span>
-                <span className={styles.btnLabel}>Battery</span>
-              </button>
+              <BatteryMenuBtn />
             </Group>
             <Divider />
             <Group label="Board">

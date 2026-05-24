@@ -1,5 +1,6 @@
 import { FreeComponent, MutationResult, ProjectFile, createId, toUtcTimestamp } from "./types";
 
+// ── 9V Hi-Watt (PP3) ──────────────────────────────────────────────────────
 export const BATTERY_WIDTH = 64;
 export const BATTERY_HEIGHT = 92;
 export const BATTERY_TERMINAL_OFFSET = 16;
@@ -16,20 +17,40 @@ export function batteryNegTerminalPos(fc: FreeComponent): { x: number; y: number
   return { x: fc.x + BATTERY_TERMINAL_OFFSET, y: fc.y - BATTERY_HEIGHT / 2 - BATTERY_NEG_TERM_H / 2 };
 }
 
+// ── Li-Ion 18650 ──────────────────────────────────────────────────────────
+export const LIION_WIDTH = 38;
+export const LIION_HEIGHT = 90;
+export const LIION_CAP_H = 10;
+export const LIION_BASE_H = 8;
+export const LIION_TERM_W = 24;
+export const LIION_TERM_H = 10;
+
+export function liionPosTerminalPos(fc: FreeComponent): { x: number; y: number } {
+  return { x: fc.x, y: fc.y - LIION_HEIGHT / 2 - LIION_TERM_H / 2 };
+}
+
+export function liionNegTerminalPos(fc: FreeComponent): { x: number; y: number } {
+  return { x: fc.x, y: fc.y + LIION_HEIGHT / 2 + LIION_TERM_H / 2 };
+}
+
+// ── Shared mutations ───────────────────────────────────────────────────────
 export function placeFreeComponent(
   project: ProjectFile,
   type: "battery",
   x: number,
   y: number,
+  subType?: "9v" | "18650",
   label?: string,
   value?: string
 ): { project: ProjectFile; id: string } {
   const id = createId("free");
+  const is18650 = subType === "18650";
   const fc: FreeComponent = {
     id,
     type,
+    subType: subType ?? "9v",
     label: label ?? `BAT-${project.freeComponents.length + 1}`,
-    value: value ?? "9V",
+    value: value ?? (is18650 ? "3.7V" : "9V"),
     x,
     y
   };

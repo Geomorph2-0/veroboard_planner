@@ -65,7 +65,7 @@ export interface PlannerState {
   disconnectWire: (wireId: string) => boolean;
   removeComponent: (componentId: string) => boolean;
   updateComponent: (id: string, fields: Partial<Pick<Component, "label" | "value" | "tolerance" | "voltageRating">>) => void;
-  dropBattery: (x: number, y: number) => void;
+  dropBattery: (x: number, y: number, subType?: "9v" | "18650") => void;
   moveBattery: (id: string, x: number, y: number) => void;
   removeBattery: (id: string) => boolean;
   connectTerminal: (terminal: TerminalRef, hole: HoleRef) => boolean;
@@ -245,15 +245,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
 
   setSelectedFreeComponentId: (id) => set({ selectedFreeComponentId: id }),
 
-  dropBattery: (x, y) => {
+  dropBattery: (x, y, subType?) => {
     const { project, past } = get();
-    const { project: newProject } = placeFreeComponent(project, "battery", x, y);
+    const { project: newProject } = placeFreeComponent(project, "battery", x, y, subType);
     set({ past: pushHistory(past, project), future: [], project: newProject, statusMessage: "Battery placed." });
   },
 
   moveBattery: (id, x, y) => {
-    const { project } = get();
-    set({ project: moveFreeComponent(project, id, x, y) });
+    const { project, past } = get();
+    set({ past: pushHistory(past, project), future: [], project: moveFreeComponent(project, id, x, y) });
   },
 
   removeBattery: (id) => {

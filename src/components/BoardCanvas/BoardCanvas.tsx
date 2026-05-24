@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ProjectFile, HoleRef, Component, Wire, FreeComponent, TerminalRef, WireEndpoint, isTerminalRef } from "../../model/types";
-import { BATTERY_HEIGHT, BATTERY_WIDTH, BATTERY_POS_TERM_W, BATTERY_POS_TERM_H, BATTERY_NEG_TERM_W, BATTERY_NEG_TERM_H, batteryNegTerminalPos, batteryPosTerminalPos } from "../../model/freeComponent";
+import { BATTERY_HEIGHT, BATTERY_WIDTH, BATTERY_POS_TERM_W, BATTERY_POS_TERM_H, BATTERY_NEG_TERM_W, BATTERY_NEG_TERM_H, batteryNegTerminalPos, batteryPosTerminalPos, LIION_WIDTH, LIION_HEIGHT, LIION_CAP_H, LIION_BASE_H, LIION_TERM_W, LIION_TERM_H, liionPosTerminalPos, liionNegTerminalPos } from "../../model/freeComponent";
 import { WIRE_PALETTE } from "../../model/wireColors";
 import { AWGSize, awgToPx } from "../../model/wireThickness";
 import styles from "./BoardCanvas.module.css";
 
 const SPACING = 28;
 const PADDING = 28;
+const LEFT_PAD = 56; // extra left margin for row number labels
 const PAD_RADIUS = 6.5;
 const HOLE_RADIUS = 4.2;
 const STRIP_WIDTH = 2.5;
@@ -14,7 +15,7 @@ const MAX_BODY_LEN = SPACING - 10;
 
 function holeCenter(hole: HoleRef) {
   return {
-    x: PADDING + hole.col * SPACING,
+    x: LEFT_PAD + hole.col * SPACING,
     y: PADDING + hole.row * SPACING
   };
 }
@@ -23,6 +24,9 @@ function wireEndpointPos(endpoint: WireEndpoint, freeComponents: FreeComponent[]
   if (isTerminalRef(endpoint)) {
     const fc = freeComponents.find((c) => c.id === endpoint.componentId);
     if (!fc) return { x: 0, y: 0 };
+    if (fc.subType === "18650") {
+      return endpoint.terminal === "pos" ? liionPosTerminalPos(fc) : liionNegTerminalPos(fc);
+    }
     return endpoint.terminal === "pos" ? batteryPosTerminalPos(fc) : batteryNegTerminalPos(fc);
   }
   return holeCenter(endpoint);
@@ -433,6 +437,99 @@ function BatteryBody({ fc, selected, pendingTerminal, onSelect, onTerminalClick,
   );
 }
 
+function LiIonBatteryBody({ fc, selected, pendingTerminal, onSelect, onTerminalClick, onMouseDown }: BatteryBodyProps) {
+  const W = LIION_WIDTH;
+  const H = LIION_HEIGHT;
+  const bx = fc.x - W / 2;
+  const by = fc.y - H / 2;
+  const posPos = liionPosTerminalPos(fc);
+  const negPos = liionNegTerminalPos(fc);
+
+  return (
+    <g>
+      {/* Main body — rectangle with slight rounding */}
+      <rect x={bx} y={by} width={W} height={H} rx={4}
+        fill="#1e7bd4" stroke={selected ? "#60b4ff" : "#1565b0"}
+        strokeWidth={selected ? 2 : 1}
+        onMouseDown={onMouseDown}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+        style={{ cursor: "move" }}
+        className={styles.componentHit}
+      />
+      {/* Top cap — lighter blue */}
+      <rect x={bx} y={by} width={W} height={LIION_CAP_H} rx={4}
+        fill="#3a9ae8"
+        onMouseDown={onMouseDown}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+        style={{ cursor: "move" }}
+        pointerEvents="none"
+      />
+      {/* Bottom base — darker blue */}
+      <rect x={bx} y={by + H - LIION_BASE_H} width={W} height={LIION_BASE_H} rx={4}
+        fill="#1565b0" pointerEvents="none" />
+      {/* Model label */}
+      <text x={fc.x} y={by + H * 0.35} textAnchor="middle" dominantBaseline="middle"
+        fontSize={7} fontWeight="bold" fill="white" pointerEvents="none" fontFamily="sans-serif">
+        18650
+      </text>
+      {/* Voltage label */}
+      <text x={fc.x} y={by + H * 0.52} textAnchor="middle" dominantBaseline="middle"
+        fontSize={7} fontWeight="bold" fill="white" pointerEvents="none" fontFamily="sans-serif">
+        {fc.value}
+      </text>
+      {/* Li-Ion label */}
+      <text x={fc.x} y={by + H * 0.68} textAnchor="middle" dominantBaseline="middle"
+        fontSize={5} fill="#a8d4f8" pointerEvents="none" fontFamily="sans-serif">
+        Li-Ion
+      </text>
+
+      {/* Positive terminal — rect above top cap */}
+      <rect
+        x={posPos.x - LIION_TERM_W / 2}
+        y={posPos.y - LIION_TERM_H / 2}
+        width={LIION_TERM_W}
+        height={LIION_TERM_H}
+        rx={2}
+        fill="#d0d0d0" stroke={pendingTerminal === "pos" ? "#44ff88" : "#888"}
+        strokeWidth={pendingTerminal === "pos" ? 2 : 0.8}
+        onClick={(e) => { e.stopPropagation(); onTerminalClick("pos"); }}
+        style={{ cursor: "crosshair" }}
+        className={styles.componentHit}
+      />
+      <text x={posPos.x} y={posPos.y} textAnchor="middle" dominantBaseline="middle"
+        fontSize={5} fontWeight="bold" fill="#333" pointerEvents="none">+</text>
+
+      {/* Negative terminal — rect below base */}
+      <rect
+        x={negPos.x - LIION_TERM_W / 2}
+        y={negPos.y - LIION_TERM_H / 2}
+        width={LIION_TERM_W}
+        height={LIION_TERM_H}
+        rx={2}
+        fill="#d0d0d0" stroke={pendingTerminal === "neg" ? "#44ff88" : "#888"}
+        strokeWidth={pendingTerminal === "neg" ? 2 : 0.8}
+        onClick={(e) => { e.stopPropagation(); onTerminalClick("neg"); }}
+        style={{ cursor: "crosshair" }}
+        className={styles.componentHit}
+      />
+      <text x={negPos.x} y={negPos.y} textAnchor="middle" dominantBaseline="middle"
+        fontSize={5} fontWeight="bold" fill="#555" pointerEvents="none">−</text>
+
+      {/* Component label */}
+      <text x={fc.x} y={by - 8} textAnchor="middle" className={styles.componentLabel}>
+        {fc.label}
+      </text>
+
+      {/* Selection outline */}
+      {selected && (
+        <rect x={bx - 3} y={by - LIION_TERM_H - 8} width={W + 6} height={H + LIION_TERM_H * 2 + 12} rx={6}
+          fill="none" stroke="#60b4ff" strokeWidth={1.5} opacity={0.5} strokeDasharray="3 2"
+          pointerEvents="none" />
+      )}
+    </g>
+  );
+}
+
 interface BoardCanvasProps {
   project: ProjectFile;
   pendingHole: HoleRef | null;
@@ -445,7 +542,7 @@ interface BoardCanvasProps {
   onWireSelect: (wireId: string) => void;
   onComponentSelect: (componentId: string) => void;
   onFreeComponentSelect: (id: string) => void;
-  onBatteryDrop: (x: number, y: number) => void;
+  onBatteryDrop: (x: number, y: number, subType?: "9v" | "18650") => void;
   onTerminalClick: (componentId: string, terminal: "pos" | "neg") => void;
   onBatteryMove: (id: string, x: number, y: number) => void;
 }
@@ -469,10 +566,11 @@ export function BoardCanvas({
   if (!project.board) return null;
 
   const { rows, cols, type: boardType } = project.board;
-  const width = PADDING * 2 + (cols - 1) * SPACING;
+  const width = LEFT_PAD + PADDING + (cols - 1) * SPACING;
   const height = PADDING * 2 + (rows - 1) * SPACING;
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; origPanX: number; origPanY: number } | null>(null);
   const [dragPos, setDragPos] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -494,16 +592,24 @@ export function BoardCanvas({
     setZoom((z) => clampZoom(z * factor));
   }
 
-  function handleWheel(e: React.WheelEvent) {
-    if (!e.ctrlKey && !e.metaKey) return;
-    e.preventDefault();
-    changeZoom(e.deltaY < 0 ? 1.1 : 1 / 1.1);
-  }
+  // Non-passive wheel listener — must be direct DOM to call preventDefault() reliably
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoom((z) => clampZoom(z * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
-  // Keyboard zoom shortcuts
+  // Keyboard zoom shortcuts — scoped to when the canvas wrap is in the DOM
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
+      if (!wrapRef.current) return;
       if (e.key === "=" || e.key === "+") { e.preventDefault(); changeZoom(1.25); }
       else if (e.key === "-") { e.preventDefault(); changeZoom(1 / 1.25); }
       else if (e.key === "0") { e.preventDefault(); setZoom(0.85); setPanX(0); setPanY(0); }
@@ -530,9 +636,9 @@ export function BoardCanvas({
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     const tool = e.dataTransfer.getData("tool");
-    if (tool !== "battery") return;
+    if (tool !== "battery-9v" && tool !== "battery-18650") return;
     const { x, y } = clientToSvg(e.clientX, e.clientY);
-    onBatteryDrop(x, y);
+    onBatteryDrop(x, y, tool === "battery-18650" ? "18650" : "9v");
   }
 
   function handleBatteryMouseDown(e: React.MouseEvent, fc: FreeComponent) {
@@ -591,10 +697,10 @@ export function BoardCanvas({
 
   return (
     <div
+      ref={wrapRef}
       className={styles.wrap}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onWheel={handleWheel}
     >
       {/* Zoom controls */}
       <div className={styles.zoomControls}>
@@ -625,8 +731,8 @@ export function BoardCanvas({
         {/* Copper strips — stripboard only */}
         {boardType === "stripboard" && Array.from({ length: rows }, (_, row) => {
           const y = PADDING + row * SPACING;
-          const x1 = PADDING - PAD_RADIUS - 2;
-          const x2 = PADDING + (cols - 1) * SPACING + PAD_RADIUS + 2;
+          const x1 = LEFT_PAD - PAD_RADIUS - 2;
+          const x2 = LEFT_PAD + (cols - 1) * SPACING + PAD_RADIUS + 2;
           return (
             <line key={`strip-${row}`} x1={x1} y1={y} x2={x2} y2={y}
               className={styles.copperStrip} strokeWidth={STRIP_WIDTH} />
@@ -635,14 +741,14 @@ export function BoardCanvas({
 
         {/* Row labels */}
         {Array.from({ length: rows }, (_, row) => (
-          <text key={`rl-${row}`} x={14} y={PADDING + row * SPACING + 4} className={styles.axisLabel}>
+          <text key={`rl-${row}`} x={LEFT_PAD - 12} y={PADDING + row * SPACING + 4} textAnchor="end" className={styles.axisLabel}>
             {row + 1}
           </text>
         ))}
 
         {/* Column labels */}
         {Array.from({ length: cols }, (_, col) => (
-          <text key={`cl-${col}`} x={PADDING + col * SPACING} y={18} className={styles.axisLabel} textAnchor="middle">
+          <text key={`cl-${col}`} x={LEFT_PAD + col * SPACING} y={18} className={styles.axisLabel} textAnchor="middle">
             {col + 1}
           </text>
         ))}
@@ -730,17 +836,18 @@ export function BoardCanvas({
         {displayedFreeComponents.map((fc) => {
           const selected = fc.id === selectedFreeComponentId;
           const ptRef = pendingTerminalRef?.componentId === fc.id ? pendingTerminalRef.terminal : null;
-          return (
-            <BatteryBody
-              key={fc.id}
-              fc={fc}
-              selected={selected}
-              pendingTerminal={ptRef}
-              onSelect={() => onFreeComponentSelect(fc.id)}
-              onTerminalClick={(terminal) => onTerminalClick(fc.id, terminal)}
-              onMouseDown={(e) => handleBatteryMouseDown(e, fc)}
-            />
-          );
+          const bodyProps = {
+            key: fc.id,
+            fc,
+            selected,
+            pendingTerminal: ptRef,
+            onSelect: () => onFreeComponentSelect(fc.id),
+            onTerminalClick: (terminal: "pos" | "neg") => onTerminalClick(fc.id, terminal),
+            onMouseDown: (e: React.MouseEvent) => handleBatteryMouseDown(e, fc),
+          };
+          return fc.subType === "18650"
+            ? <LiIonBatteryBody {...bodyProps} />
+            : <BatteryBody {...bodyProps} />;
         })}
       </svg>
     </div>

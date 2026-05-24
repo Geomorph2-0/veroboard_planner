@@ -1,4 +1,5 @@
-export type ComponentType = "resistor" | "capacitor" | "diode" | "inductor" | "crystal" | "ic" | "connector" | "led";
+export const COMPONENT_TYPES = ["resistor", "capacitor", "diode", "inductor", "crystal", "ic", "connector", "led"] as const;
+export type ComponentType = typeof COMPONENT_TYPES[number];
 export type BoardType = "stripboard" | "perfboard";
 
 export interface HoleRef {
@@ -21,6 +22,7 @@ export function isTerminalRef(ep: WireEndpoint): ep is TerminalRef {
 export interface FreeComponent {
   id: string;
   type: "battery";
+  subType?: "9v" | "18650";
   label: string;
   value: string;
   tolerance?: string;

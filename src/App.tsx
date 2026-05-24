@@ -199,7 +199,7 @@ export default function App() {
                 store.setSelectedWireId(null);
                 store.setStatusMessage("Battery selected. Press Delete to remove.");
               }}
-              onBatteryDrop={(x, y) => store.dropBattery(x, y)}
+              onBatteryDrop={(x, y, subType) => store.dropBattery(x, y, subType)}
               onTerminalClick={handleTerminalClick}
               onBatteryMove={(id, x, y) => store.moveBattery(id, x, y)}
             />

@@ -63,6 +63,15 @@ Updated before every commit. Present to user for verification before pushing.
 - [x] Print disabled (greyed out) when no board is open
 - [x] New project prompts to save first if a board is open (Save & New / Discard / Cancel)
 
+### v0.5.7 — Optimisation pass + row label fix
+- [x] Wire `thickness` now survives save/load (was silently dropped on deserialize)
+- [x] Battery `subType` now survives save/load (Li-Ion no longer reloads as 9V)
+- [x] `COMPONENT_TYPES as const` array in `types.ts` — serializer imports it, eliminating duplicate list
+- [x] `setWireColor`/`setWireThickness` unified via shared `updateWireProp` helper in `wire.ts`
+- [x] `moveBattery` now pushes to undo history (battery moves are now undoable)
+- [x] `BATTERY_ITEMS`, `RIBBON_TABS` hoisted to module level in `Ribbon.tsx`
+- [x] Board row labels use dedicated `LEFT_PAD` constant — 2-digit numbers no longer overlap holes
+
 ### v0.5.5 — Zoom, wire tools, and batteries
 - [x] SVG viewBox-based zoom + pan replaces CSS scale (dead zones eliminated)
 - [x] Browser zoom prevention — non-passive wheel listener scoped to canvas wrapper only

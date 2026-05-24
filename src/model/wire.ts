@@ -63,30 +63,25 @@ export function connectTerminalToHole(
   };
 }
 
-export function setWireThickness(project: ProjectFile, wireId: string, thickness: number): MutationResult {
+function updateWireProp<K extends keyof Wire>(project: ProjectFile, wireId: string, prop: K, value: Wire[K]): MutationResult {
   if (!project.wires.some((w) => w.id === wireId)) {
     return { project, error: "Wire not found." };
   }
   return {
     project: {
       ...project,
-      wires: project.wires.map((w) => w.id === wireId ? { ...w, thickness } : w),
+      wires: project.wires.map((w) => w.id === wireId ? { ...w, [prop]: value } : w),
       updatedAt: toUtcTimestamp(),
     },
   };
 }
 
+export function setWireThickness(project: ProjectFile, wireId: string, thickness: number): MutationResult {
+  return updateWireProp(project, wireId, "thickness", thickness);
+}
+
 export function setWireColor(project: ProjectFile, wireId: string, color: string): MutationResult {
-  if (!project.wires.some((w) => w.id === wireId)) {
-    return { project, error: "Wire not found." };
-  }
-  return {
-    project: {
-      ...project,
-      wires: project.wires.map((w) => w.id === wireId ? { ...w, color } : w),
-      updatedAt: toUtcTimestamp(),
-    },
-  };
+  return updateWireProp(project, wireId, "color", color);
 }
 
 export function disconnectProjectWire(project: ProjectFile, wireId: string): MutationResult {

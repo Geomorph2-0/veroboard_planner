@@ -1,4 +1,4 @@
-import { BoardType, ComponentType, FreeComponent, HoleRef, PROJECT_FILE_VERSION, ProjectFile, TerminalRef, WireEndpoint } from "../model/types";
+import { BoardType, ComponentType, COMPONENT_TYPES, FreeComponent, HoleRef, PROJECT_FILE_VERSION, ProjectFile, TerminalRef, WireEndpoint } from "../model/types";
 
 function assertObject(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -41,8 +41,7 @@ function parseWireEndpoint(value: unknown, label: string): WireEndpoint {
 }
 
 function parseComponentType(value: unknown): ComponentType {
-  const valid: ComponentType[] = ["resistor", "capacitor", "diode", "inductor", "crystal", "ic", "connector", "led"];
-  if (valid.includes(value as ComponentType)) return value as ComponentType;
+  if (COMPONENT_TYPES.includes(value as ComponentType)) return value as ComponentType;
   throw new Error(`Unknown component type: ${String(value)}`);
 }
 
@@ -88,7 +87,13 @@ export function deserializeProject(rawText: string): ProjectFile {
       assertString(wire.color, `wires[${index}].color`);
     }
 
-    return { id: wire.id as string, from, to, color: wire.color as string | undefined };
+    return {
+      id: wire.id as string,
+      from,
+      to,
+      color: wire.color as string | undefined,
+      thickness: typeof wire.thickness === "number" ? wire.thickness : undefined,
+    };
   });
 
   const components = parsed.components.map((component, index) => {
@@ -125,9 +130,11 @@ export function deserializeProject(rawText: string): ProjectFile {
         assertString(fc.value, `freeComponents[${index}].value`);
         assertNumber(fc.x, `freeComponents[${index}].x`);
         assertNumber(fc.y, `freeComponents[${index}].y`);
+        const subType = fc.subType === "18650" ? "18650" : "9v";
         return {
           id: fc.id as string,
           type: "battery" as const,
+          subType,
           label: fc.label as string,
           value: fc.value as string,
           tolerance: typeof fc.tolerance === "string" ? fc.tolerance : undefined,
