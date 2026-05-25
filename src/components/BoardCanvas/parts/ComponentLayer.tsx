@@ -8,7 +8,8 @@ import { DiodeBody } from "../bodies/DiodeBody";
 import { InductorBody } from "../bodies/InductorBody";
 import { CrystalBody } from "../bodies/CrystalBody";
 import { ICBody } from "../bodies/ICBody";
-import { ConnectorBody } from "../bodies/ConnectorBody";
+import { ConnectorMaleBody } from "../bodies/ConnectorMaleBody";
+import { ConnectorFemaleBody } from "../bodies/ConnectorFemaleBody";
 
 interface ComponentLayerProps {
   components: Component[];
@@ -42,7 +43,9 @@ export function ComponentLayer({ components, ledSymbolStyle, selectedComponentId
               : component.type === "ic"
               ? <ICBody from={from} to={to} selected={selected} />
               : component.type === "connector"
-              ? <ConnectorBody from={from} to={to} selected={selected} />
+              ? (component.connectorSubType === "female-single" || component.connectorSubType === "female-double"
+                ? <ConnectorFemaleBody from={from} to={to} selected={selected} subType={component.connectorSubType ?? "female-single"} />
+                : <ConnectorMaleBody from={from} to={to} selected={selected} subType={component.connectorSubType ?? "male-single"} />)
               : component.type === "led"
               ? ledSymbolStyle === "schematic"
                 ? <SchematicLEDBody from={from} to={to} selected={selected} value={component.value} />

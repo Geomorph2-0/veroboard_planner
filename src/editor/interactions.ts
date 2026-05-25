@@ -29,6 +29,6 @@ export function describeTool(tool: EditorTool): string {
   if (tool === "inductor") return "Inductor placement mode";
   if (tool === "crystal") return "Crystal placement mode";
   if (tool === "ic") return "IC: click pin 1 (top-left), then last pin (bottom-right) diagonally";
-  if (tool === "connector") return "Connector: click first pin, then last pin in the same row or column";
+  if (tool === "connector") return "Connector: click first pin, then last pin (same row/col for single-row; 1 row apart for double-row)";
   return "Capacitor placement mode";
 }

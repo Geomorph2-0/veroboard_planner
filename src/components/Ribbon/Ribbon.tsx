@@ -1,7 +1,7 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { EditorTool } from "../../editor/interactions";
 import { AWGSize } from "../../model/wireThickness";
-import { BoardType } from "../../model/types";
+import { BoardType, ConnectorSubType } from "../../model/types";
 import styles from "./Ribbon.module.css";
 import { RibbonTab, RIBBON_TABS } from "./constants";
 import { TitleBar } from "./parts/TitleBar";
@@ -24,7 +24,9 @@ interface RibbonProps {
   ledSymbolStyle: "physical" | "schematic";
   wireColour: string | null;
   wireThickness: AWGSize;
+  connectorSubType: ConnectorSubType;
   onProjectNameChange: (name: string) => void;
+  onConnectorSubTypeChange: (sub: ConnectorSubType) => void;
   onToggleLedSymbolStyle: () => void;
   onWireColourChange: (colour: string) => void;
   onWireThicknessChange: (thickness: AWGSize) => void;
@@ -46,8 +48,8 @@ export function Ribbon(props: RibbonProps) {
   const {
     projectName, tool, boardType, rows, cols,
     canDisconnectWire, canRemoveComponent, canUndo, canRedo,
-    theme, ledSymbolStyle, wireColour, wireThickness,
-    onProjectNameChange, onToggleLedSymbolStyle, onWireColourChange, onWireThicknessChange,
+    theme, ledSymbolStyle, wireColour, wireThickness, connectorSubType,
+    onProjectNameChange, onToggleLedSymbolStyle, onWireColourChange, onWireThicknessChange, onConnectorSubTypeChange,
     onToolChange, onBoardTypeChange, onResizeBoard, onDisconnectSelectedWire, onRemoveSelectedComponent,
     onUndo, onRedo, onSaveProject, onLoadProject, onNewProject, onToggleTheme, canPrint,
   } = props;
@@ -133,11 +135,13 @@ export function Ribbon(props: RibbonProps) {
             cols={cols}
             wireColour={wireColour}
             wireThickness={wireThickness}
+            connectorSubType={connectorSubType}
             onToolChange={onToolChange}
             onBoardTypeChange={onBoardTypeChange}
             onResizeBoard={onResizeBoard}
             onWireColourChange={onWireColourChange}
             onWireThicknessChange={onWireThicknessChange}
+            onConnectorSubTypeChange={onConnectorSubTypeChange}
           />
         )}
         {activeTab === "view" && (

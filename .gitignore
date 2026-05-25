@@ -22,6 +22,9 @@ Thumbs.db
 # TypeScript build info
 *.tsbuildinfo
 
+# Editor temp files
+*.tmp.*
+
 # Playwright
 /test-results/
 /playwright-report/
@@ -36,3 +39,4 @@ legacy/
 research/
 CLAUDE.md
 tasks/
+design/

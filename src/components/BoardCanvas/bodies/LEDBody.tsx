@@ -1,5 +1,6 @@
 import styles from "../BoardCanvas.module.css";
 import { MAX_BODY_LEN } from "../constants";
+import type { TwoHoleBodyProps } from "./types";
 
 const LED_COLOURS: Record<string, string> = {
   red: "#ff4040", green: "#40e040", blue: "#4488ff",
@@ -12,10 +13,7 @@ function ledColour(value: string): string {
   return LED_COLOURS[key] ?? "#ffcc44";
 }
 
-interface LEDBodyProps {
-  from: { x: number; y: number };
-  to: { x: number; y: number };
-  selected: boolean;
+interface LEDBodyProps extends TwoHoleBodyProps {
   value: string;
 }
 

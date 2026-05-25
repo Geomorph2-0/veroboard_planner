@@ -1,5 +1,5 @@
 import styles from "../Ribbon.module.css";
 
-export function Divider() {
+export function RibbonDivider() {
   return <div className={styles.divider} />;
 }

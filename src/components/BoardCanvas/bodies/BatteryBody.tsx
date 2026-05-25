@@ -1,4 +1,3 @@
-import { FreeComponent } from "../../../model/types";
 import {
   BATTERY_HEIGHT,
   BATTERY_WIDTH,
@@ -10,15 +9,7 @@ import {
   batteryPosTerminalPos,
 } from "../../../model/freeComponent";
 import styles from "../BoardCanvas.module.css";
-
-export interface BatteryBodyProps {
-  fc: FreeComponent;
-  selected: boolean;
-  pendingTerminal: "pos" | "neg" | null;
-  onSelect: () => void;
-  onTerminalClick: (terminal: "pos" | "neg") => void;
-  onMouseDown: (e: React.MouseEvent) => void;
-}
+import type { BatteryBodyProps } from "./types";
 
 export function BatteryBody({ fc, selected, pendingTerminal, onSelect, onTerminalClick, onMouseDown }: BatteryBodyProps) {
   const W = BATTERY_WIDTH;

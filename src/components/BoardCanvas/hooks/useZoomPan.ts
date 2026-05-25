@@ -20,6 +20,7 @@ interface UseZoomPanResult {
   handleWorkspaceMouseDown: (e: React.MouseEvent) => void;
   handlePanMove: (e: React.MouseEvent) => void;
   handlePanEnd: () => void;
+  hasPanned: () => boolean;
 }
 
 function clampZoom(z: number): number {
@@ -31,6 +32,7 @@ export function useZoomPan({ wrapRef, svgRef, width, height }: UseZoomPanArgs): 
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const panRef = useRef<{ startX: number; startY: number; origPanX: number; origPanY: number } | null>(null);
+  const panMovedRef = useRef(false);
 
   function changeZoom(factor: number) {
     setZoom((z) => clampZoom(z * factor));
@@ -87,6 +89,7 @@ export function useZoomPan({ wrapRef, svgRef, width, height }: UseZoomPanArgs): 
 
   function handleWorkspaceMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return;
+    panMovedRef.current = false;
     panRef.current = { startX: e.clientX, startY: e.clientY, origPanX: panX, origPanY: panY };
   }
 
@@ -94,6 +97,7 @@ export function useZoomPan({ wrapRef, svgRef, width, height }: UseZoomPanArgs): 
     if (!panRef.current) return;
     const dx = e.clientX - panRef.current.startX;
     const dy = e.clientY - panRef.current.startY;
+    if (Math.sqrt(dx * dx + dy * dy) > 4) panMovedRef.current = true;
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -110,5 +114,6 @@ export function useZoomPan({ wrapRef, svgRef, width, height }: UseZoomPanArgs): 
     viewBox: `${vbX} ${vbY} ${vbW} ${vbH}`,
     changeZoom, reset, clientToSvg,
     handleWorkspaceMouseDown, handlePanMove, handlePanEnd,
+    hasPanned: () => panMovedRef.current,
   };
 }

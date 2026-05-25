@@ -1,5 +1,6 @@
 export const COMPONENT_TYPES = ["resistor", "capacitor", "diode", "inductor", "crystal", "ic", "connector", "led"] as const;
 export type ComponentType = typeof COMPONENT_TYPES[number];
+export type ConnectorSubType = "male-single" | "female-single" | "male-double" | "female-double";
 export type BoardType = "stripboard" | "perfboard";
 
 export interface HoleRef {
@@ -55,6 +56,7 @@ export interface Component {
   voltageRating?: string;
   holeA: HoleRef;
   holeB: HoleRef;
+  connectorSubType?: ConnectorSubType;
 }
 
 export interface ProjectFile {

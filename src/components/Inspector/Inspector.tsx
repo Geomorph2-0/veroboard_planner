@@ -62,9 +62,15 @@ function derivedComponentInfo(c: Component): string | null {
     return `DIP-${pinsPerSide * 2} · ${pinsPerSide} pins/side`;
   }
   if (c.type === "connector") {
+    const isDouble = c.connectorSubType === "male-double" || c.connectorSubType === "female-double";
+    const gender = c.connectorSubType?.startsWith("female") ? "female" : "male";
+    if (isDouble) {
+      const pinsPerRow = Math.abs(c.holeA.col - c.holeB.col) + 1;
+      return `2×${pinsPerRow} · double-row · ${gender}`;
+    }
     const pins = Math.abs(c.holeA.row - c.holeB.row) + Math.abs(c.holeA.col - c.holeB.col) + 1;
     const orientation = c.holeA.row === c.holeB.row ? "horizontal" : "vertical";
-    return `${pins}-pin · ${orientation}`;
+    return `${pins}-pin · ${orientation} · ${gender}`;
   }
   return null;
 }

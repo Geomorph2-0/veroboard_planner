@@ -19,6 +19,12 @@ function derivedLabel(type: ComponentType, holeA: HoleRef, holeB: HoleRef): stri
     return `DIP-${pinsPerSide * 2}`;
   }
   if (type === "connector") {
+    const sub = usePlannerStore.getState().connectorSubType;
+    const isDouble = sub === "male-double" || sub === "female-double";
+    if (isDouble) {
+      const pinsPerRow = Math.abs(holeA.col - holeB.col) + 1;
+      return `2×${pinsPerRow}`;
+    }
     const pins = Math.abs(holeA.row - holeB.row) + Math.abs(holeA.col - holeB.col) + 1;
     return `${pins}-pin`;
   }
@@ -162,8 +168,10 @@ export default function App() {
         onToggleLedSymbolStyle={() => setLedSymbolStyle(s => s === "physical" ? "schematic" : "physical")}
         wireColour={store.wireColour}
         wireThickness={store.wireThickness}
+        connectorSubType={store.connectorSubType}
         onWireColourChange={store.setWireColour}
         onWireThicknessChange={store.setWireThickness}
+        onConnectorSubTypeChange={store.setConnectorSubType}
       />
       </div>
 

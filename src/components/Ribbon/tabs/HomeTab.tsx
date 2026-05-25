@@ -1,6 +1,6 @@
-import { RibbonBtn } from "../shared/RibbonButton";
-import { Group } from "../shared/RibbonGroup";
-import { Divider } from "../shared/RibbonDivider";
+import { RibbonBtn } from "../shared/RibbonBtn";
+import { RibbonGroup } from "../shared/RibbonGroup";
+import { RibbonDivider } from "../shared/RibbonDivider";
 
 export function HomeTab({
   canUndo, canRedo, canDisconnectWire, canRemoveComponent,
@@ -17,15 +17,15 @@ export function HomeTab({
 }) {
   return (
     <>
-      <Group label="History">
+      <RibbonGroup label="History">
         <RibbonBtn icon="↩" label="Undo" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" testId="ribbon-undo" />
         <RibbonBtn icon="↪" label="Redo" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" testId="ribbon-redo" />
-      </Group>
-      <Divider />
-      <Group label="Selection">
+      </RibbonGroup>
+      <RibbonDivider />
+      <RibbonGroup label="Selection">
         <RibbonBtn icon="✂" label="Del Wire" onClick={onDisconnectSelectedWire} disabled={!canDisconnectWire} testId="ribbon-del-wire" />
         <RibbonBtn icon="✕" label="Del Part" onClick={onRemoveSelectedComponent} disabled={!canRemoveComponent} testId="ribbon-del-part" />
-      </Group>
+      </RibbonGroup>
     </>
   );
 }

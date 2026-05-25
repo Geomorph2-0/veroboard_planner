@@ -9,6 +9,7 @@ import {
   BoardType,
   Component,
   ComponentType,
+  ConnectorSubType,
   HoleRef,
   ProjectFile,
   TerminalRef,
@@ -47,8 +48,10 @@ export interface PlannerState {
   componentDraft: ComponentDraft;
   wireColour: string | null;
   wireThickness: AWGSize;
+  connectorSubType: ConnectorSubType;
 
   setTool: (tool: EditorTool) => void;
+  setConnectorSubType: (sub: ConnectorSubType) => void;
   setWireColour: (colour: string | null) => void;
   setWireThickness: (thickness: AWGSize) => void;
   setPendingHole: (hole: HoleRef | null) => void;
@@ -97,9 +100,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   componentDraft: defaultDraft,
   wireColour: null,
   wireThickness: 20 as AWGSize,
+  connectorSubType: "male-single" as ConnectorSubType,
 
   setWireColour: (colour) => set({ wireColour: colour }),
   setWireThickness: (thickness) => set({ wireThickness: thickness }),
+  setConnectorSubType: (sub) => set({ connectorSubType: sub }),
 
   setTool: (tool) => {
     set({
@@ -201,6 +206,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (!project.board) { set({ statusMessage: "Add a board first." }); return false; }
     const merged = { ...componentDraft, ...draft };
     const defaultLabel = `${type.toUpperCase()}-${project.components.length + 1}`;
+    const connectorSubType = type === "connector" ? get().connectorSubType : undefined;
     const result = placeProjectComponent(project, {
       type,
       label: merged.label || defaultLabel,
@@ -208,7 +214,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       tolerance: merged.tolerance || undefined,
       voltageRating: merged.voltageRating || undefined,
       holeA,
-      holeB
+      holeB,
+      connectorSubType
     });
     if (result.error) { set({ statusMessage: result.error }); return false; }
     set({ past: pushHistory(past, project), future: [], project: result.project, statusMessage: `${type} placed.` });

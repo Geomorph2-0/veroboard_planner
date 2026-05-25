@@ -57,7 +57,7 @@ export function BoardCanvas({
   const {
     zoom, vbW, vbH, viewBox,
     changeZoom, reset: resetZoom, clientToSvg,
-    handleWorkspaceMouseDown, handlePanMove, handlePanEnd,
+    handleWorkspaceMouseDown, handlePanMove, handlePanEnd, hasPanned,
   } = useZoomPan({ wrapRef, svgRef, width, height });
 
   const {
@@ -115,18 +115,19 @@ export function BoardCanvas({
         viewBox={viewBox}
         role="img"
         aria-label="Veroboard canvas"
+        onMouseDown={handleWorkspaceMouseDown}
         onMouseMove={handleSvgMouseMove}
         onMouseUp={handleSvgMouseUp}
         onMouseLeave={handleSvgMouseUp}
       >
         {/* Off-board workspace — large rect to cover all pan positions */}
-        <rect x={-5000} y={-5000} width={10000} height={10000} className={styles.workspace}
-          onMouseDown={handleWorkspaceMouseDown} style={{ cursor: "grab" }} />
+        <rect x={-5000} y={-5000} width={10000} height={10000} className={styles.workspace} style={{ cursor: "grab" }} />
 
         <BoardSurface
           rows={rows} cols={cols} boardType={boardType}
           width={width} height={height}
-          pendingHole={pendingHole} onHoleClick={onHoleClick}
+          pendingHole={pendingHole}
+          onHoleClick={(hole) => { if (!hasPanned()) onHoleClick(hole); }}
         />
 
         <WireLayer

@@ -10,7 +10,6 @@ export const COMPONENT_ITEMS: { type: EditorTool; icon: string; label: string }[
   { type: "inductor",  icon: "∿",  label: "Inductor"   },
   { type: "crystal",   icon: "◇",  label: "Crystal"    },
   { type: "ic",        icon: "▣",  label: "IC"         },
-  { type: "connector", icon: "⊞",  label: "Connector"  },
 ];
 
 export const COMPONENT_TOOLS = new Set(COMPONENT_ITEMS.map(c => c.type));

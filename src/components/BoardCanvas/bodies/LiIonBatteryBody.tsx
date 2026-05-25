@@ -9,7 +9,7 @@ import {
   liionNegTerminalPos,
 } from "../../../model/freeComponent";
 import styles from "../BoardCanvas.module.css";
-import type { BatteryBodyProps } from "./BatteryBody";
+import type { BatteryBodyProps } from "./types";
 
 export function LiIonBatteryBody({ fc, selected, pendingTerminal, onSelect, onTerminalClick, onMouseDown }: BatteryBodyProps) {
   const W = LIION_WIDTH;
